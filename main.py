@@ -11,7 +11,7 @@ AI_KEY = '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'
 bot = telebot.TeleBot(TOKEN)
 client = Groq(api_key=AI_KEY)
 
-# БАЗА ДАННЫХ (без лишних блоков, чтобы не было ошибок синтаксиса)
+# --- БАЗА ДАННЫХ ---
 conn = sqlite3.connect('memory.db', check_same_thread=False)
 cursor = conn.cursor()
 cursor.execute('CREATE TABLE IF NOT EXISTS history (chat_id INTEGER PRIMARY KEY, messages TEXT)')
@@ -21,13 +21,12 @@ conn.commit()
 def start(message):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add(types.KeyboardButton("ИИ"), types.KeyboardButton("Скрипты"))
-    bot.send_message(message.chat.id, "Выбирай вкладку, фраер:", reply_markup=markup)
+    bot.send_message(message.chat.id, "Здарова. Я в строю. Че надо?", reply_markup=markup)
 
 @bot.message_handler(func=lambda message: True)
 def handle_all_messages(message):
     chat_id = message.chat.id
     
-    # Обработка кнопок
     if message.text == "ИИ":
         bot.reply_to(message, "Здарова фраер, че хотел?")
         return
@@ -35,36 +34,31 @@ def handle_all_messages(message):
         bot.reply_to(message, "Тут пока пусто.")
         return
 
-    # Работа с нейронкой и памятью
     bot.send_chat_action(chat_id, 'typing')
     
-    # Получаем историю
     cursor.execute('SELECT messages FROM history WHERE chat_id = ?', (chat_id,))
     res = cursor.fetchone()
     history = json.loads(res[0]) if res else []
     
-    # Добавляем сообщение юзера
     history.append({"role": "user", "content": message.text})
-    if len(history) > 30: history = history[-30:]
+    if len(history) > 40: history = history[-40:]
 
     try:
+        # ВОТ ТУТ МЫ СОЗДАЕМ completion
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[{
                 "role": "system", 
                 "content": (
-                    "Ты — умный и опытный ассистент. Ты в курсе, как устроена работа на OnlyFans, и если тебя попросят, "
-                    "ты легко накидаешь идеи для рассылок, сценарии продаж или советы по чаттингу от лица модели. "
-                    "Но не зацикливайся на этом — отвечай на любые вопросы так, как удобно пользователю. "
-                    "Общайся на 'ты', будь сообразительным, иногда можешь по-дружески подколоть. "
-                    "Твой стиль: полезный бро, который разбирается в индустрии, но не грузит этим без повода. "
-                    "Отвечай только на русском."
+                    "Ты — умный ассистент. Ты понимаешь специфику работы на OnlyFans (рассылки, чаттинг), "
+                    "и помогаешь с этим, если тебя попросят. В остальное время ты просто полезный собеседник. "
+                    "Общайся на 'ты', будь сообразительным, иногда по-дружески подкалывай. Отвечай только на русском."
                 )
             }] + history
         )
+        
         answer = completion.choices[0].message.content
         
-        # Сохраняем ответ в историю
         history.append({"role": "assistant", "content": answer})
         cursor.execute('INSERT OR REPLACE INTO history (chat_id, messages) VALUES (?, ?)', (chat_id, json.dumps(history)))
         conn.commit()
