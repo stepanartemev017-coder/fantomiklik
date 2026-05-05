@@ -3,7 +3,7 @@ import g4f
 from g4f.client import Client
 
 # ВАЖНО: Токен ОБЯЗАТЕЛЬНО должен быть в кавычках
-TOKEN = '8749709641:AAEyio0vr4SNNBeGo8uyrdp7lqlG0q56Pfn8'
+TOKEN = '8749709641:AAEyi0vr4SNNBeGo8uyrdp7lq1GOq56Pfn8'
 bot = telebot.TeleBot(TOKEN)
 
 @bot.message_handler(commands=['start'])
