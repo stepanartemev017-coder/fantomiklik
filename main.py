@@ -11,9 +11,12 @@ bot = telebot.TeleBot(TOKEN)
 @bot.message_handler(func=lambda message: True)
 def chat(message):
     try:
-        completion = client.chat.completions.create(
-            model="llama-3.3-70b-versatile" ,
-            messages=[{"role": "user", "content": message.text}]
+       completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": "Ты полезный ассистент. Всегда отвечай только на русском языке."},
+                {"role": "user", "content": message.text}
+            ]
         )
         bot.reply_to(message, completion.choices[0].message.content)
     except Exception as e:
