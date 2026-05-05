@@ -44,7 +44,7 @@ KNOWING_LIST = (
     "*(Просто нажми на вопрос, чтобы скопировать)*"
 )
 
-# --- 2. 10 СЦЕНАРИЕВ СЕКСТИНГА ---
+# --- 2. 10 СЦЕНАРИЕВ СЕКСТИНГА (Без тизеров) ---
 SEXTING_LIST = (
     "🔥 **10 СЦЕНАРИЕВ ПРОГРЕВА**\n\n"
     "1. **'СЛУЧАЙНЫЙ КАДР'**\n`Ой, пересматривала сейчас галерею и нашла одно фото... я тут такая настоящая. Показать?` \n*Дальше:* Описывай свои чувства или наряд.\n\n"
@@ -61,7 +61,7 @@ SEXTING_LIST = (
 
 # --- 3. 10 ПРОМТОВ ДЛЯ ИИ ---
 PROMPTS_LIST = (
-    "📝 **10 ПРОМТЫ ДЛЯ РАССЫЛОК**\n\n"
+    "📝 **10 ПРОМТОВ ДЛЯ РАССЫЛОК**\n\n"
     "1. `Сделай 5 рассылок на тему 'Уютный вечер'. Пиши строго на ТЫ. Лайв-контекст + вопрос.`\n"
     "2. `Придумай 5 рассылок 'Я в магазине белья'. Игриво на ТЫ, создай интригу.`\n"
     "3. `Накидай 5 утренних рассылок 'Только проснулась'. Тон нежный, на ТЫ.`\n"
@@ -89,7 +89,7 @@ def main_keyboard():
 @bot.message_handler(commands=['start', 'menu'])
 def cmd_start(message):
     db_op('INSERT OR REPLACE INTO history VALUES (?, ?, ?)', (message.chat.id, '[]', 'main'))
-    bot.send_message(message.chat.id, "Ethera на связи. Погнали?", reply_markup=main_keyboard())
+    bot.send_message(message.chat.id, "Ethera на связи. Инструменты в клавиатуре ниже:", reply_markup=main_keyboard())
 
 @bot.message_handler(func=lambda message: True)
 def handle_msg(message):
@@ -128,7 +128,7 @@ def handle_msg(message):
             db_op('UPDATE history SET messages=? WHERE chat_id=?', (json.dumps(history[-15:]), chat_id))
             bot.reply_to(message, answer)
         except:
-            bot.reply_to(message, "Ошибка связи с ИИ.")
+            bot.reply_to(message, "Ошибка связи с ИИ. Попробуй позже.")
     else:
         bot.send_message(chat_id, "Выбери раздел в меню ниже:", reply_markup=main_keyboard())
 
