@@ -19,26 +19,24 @@ def db_op(query, params=()):
     conn.close()
     return res
 
-# Создаем таблицу
 db_op('CREATE TABLE IF NOT EXISTS history (chat_id INTEGER PRIMARY KEY, messages TEXT)')
 
 @bot.message_handler(commands=['start'])
 def start(message):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add(types.KeyboardButton("ИИ"), types.KeyboardButton("Скрипты"))
-    bot.send_message(message.chat.id, "Работаем! Я в курсе, что мы на Fansly. Что по рассылкам или дожиму?", reply_markup=markup)
+    bot.send_message(message.chat.id, "Бот готов. Нужна рассылка в личку фанам или помощь с ответом? Пиши, сделаем красиво.", reply_markup=markup)
 
 @bot.message_handler(func=lambda message: True)
 def handle_msg(message):
     chat_id = message.chat.id
     
     if message.text in ["ИИ", "Скрипты"]:
-        bot.reply_to(message, "На связи. Описывай ситуацию или проси что нужно.")
+        bot.reply_to(message, "Я на связи. Какую задачу решаем?")
         return
 
     bot.send_chat_action(chat_id, 'typing')
     
-    # Получаем историю (берем первый элемент кортежа)
     res = db_op('SELECT messages FROM history WHERE chat_id = ?', (chat_id,))
     history = json.loads(res[0]) if res and res[0] else []
     
@@ -46,24 +44,23 @@ def handle_msg(message):
     if len(history) > 30: history = history[-30:]
 
     try:
-        # ЗАПРОС К НЕЙРОНКЕ
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[{
                 "role": "system", 
                 "content": (
-                    "Ты — универсальный ИИ-ассистент для чаттера на Fansly. Твоя задача — помогать во всём. "
-                    "1. ОТВЕТЫ: Помогай отвечать фанам так, чтобы они влюблялись или покупали. "
-                    "2. ДОЖИМ: Подсказывай, как закрыть сделку на PPV или кастом. "
-                    "3. КРЕАТИВ: Делай рассылки (милые, игривые, завлекающие). "
-                    "4. ОБЩЕНИЕ: Можешь просто обсудить работу. Стиль: живой, на 'ты'. Только на русском."
+                    "Ты — профи-ассистент чаттера на Fansly. Ты помогаешь писать сообщения от лица модели. \n"
+                    "ПРАВИЛА ДЛЯ РАССЫЛОК: \n"
+                    "1. Каждое сообщение должно выглядеть как ЛИЧНОЕ и живое (Mass Message). \n"
+                    "2. СТРУКТУРА: Теплое приветствие -> Текущий контекст (например: только вышла из душа, лежу в постели, смотрю фильм, вернулась с прогулки) -> Игривый/теплый вопрос по теме. \n"
+                    "3. СТИЛЬ: Никакой рекламы! Только естественная речь, мягкая интрига и теплота. \n"
+                    "4. ЗАДАЧА: Сделать так, чтобы фан почувствовал близость и захотел ответить. \n"
+                    "Общайся с юзером на 'ты', помогай с дожимом и PPV. Отвечай только на русском."
                 )
             }] + history
         )
         
-        # ИСПРАВЛЕННЫЙ СПОСОБ ПОЛУЧЕНИЯ ТЕКСТА:
         answer = completion.choices[0].message.content
-        
         history.append({"role": "assistant", "content": answer})
         
         db_op('INSERT OR REPLACE INTO history (chat_id, messages) VALUES (?, ?)', (chat_id, json.dumps(history)))
