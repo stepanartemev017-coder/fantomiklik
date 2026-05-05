@@ -4,7 +4,7 @@ import json
 
 # --- КОНФИГУРАЦИЯ ---
 TOKEN = '8749709641:AAEzaq4hLh2S982vdEtwDksxgnBQFZVNPuc'
-AI_KEY = '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'
+AI_KEY = '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'
 
 bot = telebot.TeleBot(TOKEN)
 client = Groq(api_key=AI_KEY)
