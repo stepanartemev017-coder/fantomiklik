@@ -3,7 +3,7 @@ from telebot import types
 from groq import Groq
 
 # ДАННЫЕ
-TOKEN = '8749709641:AHH8AgA6cj6QPb114jhjnncn9KVFSduGO1w'
+TOKEN = '8749709641:AAGl3ErhSiFvDed1CFdybqPFYhEge5cqlZ0'
 GROQ_KEY = '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'
 
 client = Groq(api_key=GROQ_KEY)
