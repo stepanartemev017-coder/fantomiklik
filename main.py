@@ -44,7 +44,6 @@ SYSTEM_PROMPT = (
     "Стиль: милый, сдержанный, женственный. Лайв-контекст + Вопрос в конце."
 )
 
-# --- ИНТЕРФЕЙС ---
 def main_menu_markup():
     markup = types.InlineKeyboardMarkup(row_width=1)
     markup.add(
@@ -75,27 +74,29 @@ def cmd_menu(message):
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
+    chat_id = call.message.chat.id
     if call.data == "open_ai":
-        db_op('UPDATE history SET state = ? WHERE chat_id = ?', ("ai_chat", call.message.chat.id))
+        db_op('UPDATE history SET state = ? WHERE chat_id = ?', ("ai_chat", chat_id))
         bot.edit_message_text("🦾 Режим ИИ активен. Жду твой запрос:", 
-                              call.message.chat.id, call.message.message_id, reply_markup=back_to_menu_markup())
+                              chat_id, call.message.message_id, reply_markup=back_to_menu_markup())
     elif call.data == "open_prompts":
         bot.edit_message_text("Выбери тему промта:", 
-                              call.message.chat.id, call.message.message_id, reply_markup=prompts_menu_markup())
+                              chat_id, call.message.message_id, reply_markup=prompts_menu_markup())
     elif call.data.startswith("get_p_"):
         p_id = call.data.replace("get_p_", "")
         text = PROMPTS.get(p_id)
-        bot.send_message(call.message.chat.id, f"Копируй и отправляй мне:\n\n`{text}`", parse_mode="Markdown")
+        bot.send_message(chat_id, f"Копируй и отправляй мне:\n\n`{text}`", parse_mode="Markdown")
     elif call.data == "open_main":
-        db_op('UPDATE history SET state = ? WHERE chat_id = ?', ("main", call.message.chat.id))
+        db_op('UPDATE history SET state = ? WHERE chat_id = ?', ("main", chat_id))
         bot.edit_message_text("Главное меню:", 
-                              call.message.chat.id, call.message.message_id, reply_markup=main_menu_markup())
+                              chat_id, call.message.message_id, reply_markup=main_menu_markup())
 
 @bot.message_handler(func=lambda message: True)
 def handle_text(message):
     chat_id = message.chat.id
     res = db_op('SELECT messages, state FROM history WHERE chat_id = ?', (chat_id,))
     
+    # ИСПРАВЛЕНО: корректная проверка состояния из кортежа
     if not res or res[1] != "ai_chat":
         bot.send_message(chat_id, "Сначала нажми кнопку '🤖 ИИ Ассистент'.", reply_markup=main_menu_markup())
         return
@@ -110,14 +111,13 @@ def handle_text(message):
             messages=[{"role": "system", "content": SYSTEM_PROMPT}] + history,
             temperature=0.8
         )
-        # ИСПРАВЛЕНО: добавили [0] перед .message
+        # ИСПРАВЛЕНО: корректное обращение к результату [0]
         answer = completion.choices[0].message.content
         
         history.append({"role": "assistant", "content": answer})
         db_op('UPDATE history SET messages = ? WHERE chat_id = ?', (json.dumps(history[-15:]), chat_id))
         bot.reply_to(message, answer)
     except Exception as e:
-        # Теперь бот будет писать конкретную ошибку, если что-то не так
         bot.reply_to(message, f"Ошибка: {str(e)}")
 
 if __name__ == '__main__':
