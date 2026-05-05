@@ -3,7 +3,7 @@ from groq import Groq
 import json
 
 # --- КОНФИГУРАЦИЯ ---
-TOKEN = '8749709641:AAHZLNTR7afwWBGKjQLuJAnHUYOdTKT9_fo'
+TOKEN = '8749709641:AAEzaq4hLh2S982vdEtwDksxgnBQFZVNPuc'
 AI_KEY = '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'
 
 bot = telebot.TeleBot(TOKEN)
