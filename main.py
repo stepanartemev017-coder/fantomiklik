@@ -1,4 +1,4 @@
-pythonimport telebot
+import telebot
 from telebot import types
 from groq import Groq
 import sqlite3
