@@ -21,15 +21,26 @@ def db_op(query, params=()):
     conn.close()
     return res
 
-# Создаем таблицу
 conn = sqlite3.connect('memory.db')
 conn.execute('CREATE TABLE IF NOT EXISTS history (chat_id INTEGER PRIMARY KEY, messages TEXT, state TEXT)')
 conn.close()
 
-# --- ПРОМТЫ ДЛЯ КОПИРОВАНИЯ ---
+# --- ТО САМОЕ ОПИСАНИЕ (ЛИЧНОСТЬ ИИ) ---
+SYSTEM_PROMPT = (
+    "Ты — умная и приятная девушка, ассистент и 'правая рука' чаттера на Fansly. "
+    "ВАЖНО: Пользователь, который тебе пишет — это ТВОЙ КОЛЛЕГА (чаттер/админ), а не фан. Не пытайся соблазнить его как фана!\n\n"
+    "ТВОЙ СТИЛЬ С ЧАТТЕРОМ:\n"
+    "- Общайся мило, тепло и сдержанно. Можешь использовать редкие ласковые слова (милый, хороший), но помни, что вы работаете вместе.\n"
+    "- Ты помогаешь ему делать деньги. Будь экспертом в рассылках и общении с фанами.\n\n"
+    "ТВОИ ЗАДАЧИ:\n"
+    "1. РАССЫЛКИ: По запросу создавай личные сообщения для фанов. СТРОГО НА 'ТЫ', обращаясь к одному человеку. Структура: Лайв-контекст -> Игривый вопрос.\n"
+    "2. ЧАТТИНГ: Если чаттер прислал фразу фана, предложи варианты ответа от лица модели.\n\n"
+    "ПРАВИЛО: Ответы для фанов пиши от лица девушки, на русском языке, без ошибок."
+)
+
 PROMPTS = {
-    "1": "Сделай 5 личных рассылок на тему 'Красота в мелочах'. Пиши строго на ТЫ, обращаясь к одному человеку. Ситуации: свечи, белье, чулки, какао, фейл.",
-    "2": "Сделай 5 личных рассылок 'Помоги выбрать'. Пиши на ТЫ. Темы: цвет лака, кино, музыка, еда, платье. Фан должен верить, что ты спрашиваешь именно его.",
+    "1": "Сделай 5 личных рассылок на тему 'Красота в мелочах'. Пиши строго на ТЫ, обращаясь к одному человеку. Ситуации: новые свечи, белье, чулки, какао, фейл.",
+    "2": "Сделай 5 личных рассылок 'Помоги выбрать'. Пиши на ТЫ. Темы: цвет лака, кино, музыка, еда, платье.",
     "3": "Накидай 5 личных рассылок 'За кадром'. Пиши на ТЫ. Темы: беспорядок, усталость, идеи, фото, камера села.",
     "4": "Сделай 5 утренних рассылок 'Первые мысли'. Нежный тон на ТЫ. Варианты: проснулась, под одеялом, кофе, сон, сонная.",
     "5": "Придумай 5 личных рассылок 'Вечер для нас'. Интимно на ТЫ. Темы: вино, полумрак, музыка, ванна, чокаюсь с аватаркой.",
@@ -39,11 +50,6 @@ PROMPTS = {
     "9": "Сделай 5 рассылок 'Ой, всё...'. Самоирония на ТЫ. Темы: кухня, ключи, кружка, носки, фейл на фото.",
     "10": "Накидай 5 личных рассылок 'Минутка раздумий'. Тепло на ТЫ. Темы: давно не болтали, встреча, море, какой ты в жизни, просто рада."
 }
-
-SYSTEM_PROMPT = (
-    "Ты — ассистент чаттера на Fansly. ПИШИ СТРОГО НА ТЫ, обращаясь к одному человеку. "
-    "Стиль: милый, сдержанный. Лайв-контекст + Вопрос в конце."
-)
 
 # --- КЛАВИАТУРЫ ---
 def main_menu_markup():
@@ -67,7 +73,6 @@ def back_to_menu_markup():
     markup.add(types.InlineKeyboardButton("⬅️ Назад в меню", callback_data="open_main"))
     return markup
 
-# --- КОМАНДЫ ---
 @bot.message_handler(commands=['start', 'menu'])
 def cmd_menu(message):
     db_op('INSERT OR REPLACE INTO history (chat_id, messages, state) VALUES (?, ?, ?)', 
@@ -79,7 +84,7 @@ def callback_query(call):
     chat_id = call.message.chat.id
     if call.data == "open_ai":
         db_op('UPDATE history SET state = ? WHERE chat_id = ?', ("ai_chat", chat_id))
-        bot.edit_message_text("🦾 Режим ИИ активен. Жду твой запрос:", 
+        bot.edit_message_text("🦾 Режим ИИ активен. Присылай промт или ситуацию:", 
                               chat_id, call.message.message_id, reply_markup=back_to_menu_markup())
     elif call.data == "open_prompts":
         bot.edit_message_text("Выбери тему промта:", chat_id, call.message.message_id, reply_markup=prompts_menu_markup())
@@ -90,22 +95,17 @@ def callback_query(call):
         db_op('UPDATE history SET state = ? WHERE chat_id = ?', ("main", chat_id))
         bot.edit_message_text("Главное меню:", chat_id, call.message.message_id, reply_markup=main_menu_markup())
 
-# --- ГЛАВНЫЙ ОБРАБОТЧИК ТЕКСТА ---
 @bot.message_handler(func=lambda message: True)
 def handle_text(message):
     chat_id = message.chat.id
-    # Запрашиваем данные из базы
     res = db_op('SELECT messages, state FROM history WHERE chat_id = ?', (chat_id,))
     
-    # Если записи нет — создаем её
     if not res:
-        db_op('INSERT INTO history (chat_id, messages, state) VALUES (?, ?, ?)', (chat_id, json.dumps([]), "main"))
-        bot.send_message(chat_id, "Сначала нажми кнопку '🤖 ИИ Ассистент'.", reply_markup=main_menu_markup())
+        cmd_menu(message)
         return
 
     history_json, state = res
 
-    # ПРОВЕРКА СОСТОЯНИЯ
     if state == "ai_chat":
         bot.send_chat_action(chat_id, 'typing')
         history = json.loads(history_json) if history_json else []
@@ -117,17 +117,14 @@ def handle_text(message):
                 messages=[{"role": "system", "content": SYSTEM_PROMPT}] + history,
                 temperature=0.8
             )
-            # Доступ к тексту ответа
             answer = completion.choices[0].message.content
             
             history.append({"role": "assistant", "content": answer})
-            # Сохраняем историю (последние 15 сообщений)
             db_op('UPDATE history SET messages = ? WHERE chat_id = ?', (json.dumps(history[-15:]), chat_id))
             bot.reply_to(message, answer)
         except Exception as e:
             bot.reply_to(message, f"Ошибка ИИ: {str(e)}")
     else:
-        # Если статус не "ai_chat", выкидываем в меню
         bot.send_message(chat_id, "Сначала нажми кнопку '🤖 ИИ Ассистент'.", reply_markup=main_menu_markup())
 
 if __name__ == '__main__':
