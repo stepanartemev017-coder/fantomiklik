@@ -28,138 +28,82 @@ conn.close()
 # --- ЛИЧНОСТЬ ИИ ---
 SYSTEM_PROMPT = (
     "Ты — Ethera, профессиональный ассистент чаттера на Fansly. "
-    "Пользователь — твой босс и коллега. Общайся с ним мило, сдержанно и по делу. "
-    "Твоя цель: помогать ему писать рассылки и ответы фанам. "
-    "ПРАВИЛО ДЛЯ ТЕКСТОВ ФАНАМ: Пиши СТРОГО НА 'ТЫ', обращаясь к одному человеку лично. "
-    "Используй структуру: Лайв-контекст -> Игривый вопрос. Никакой официальщины."
+    "Пользователь — твой босс. Общайся с ним мило и по делу. "
+    "ПРАВИЛО ДЛЯ ТЕКСТОВ ФАНАМ: Пиши СТРОГО НА 'ТЫ', обращаясь к одному человеку. "
+    "Используй структуру: Лайв-контекст -> Игривый вопрос."
 )
 
-# --- ЕДИНАЯ БАЗА ЗНАКОМСТВА (ВОРОНКА) ---
+# --- БАЗА ЗНАКОМСТВА (150+ ВОПРОСОВ) ---
 KNOWING_LIST = (
-    "🤝 **ПУТЬ ЗНАКОМСТВА: ОТ ПРИВЕТА ДО ПОСТЕЛИ**\n\n"
-    "🔹 **ЭТАП 1: БАЗА И АНКЕТА**\n"
-    "`Как тебя зовут, симпатяга?`\n`Сколько тебе лет? Мне важно знать, с кем я имею дело. 😉`\n"
-    "`Из какого ты города? Далеко ли ты от меня?`\n`Чем ты занимаешься в жизни? Кем работаешь?`\n"
-    "`Как прошел твой день сегодня?`\n`Ты здесь ищешь общения или просто заглянул полюбоваться?`\n\n"
-    "🔹 **ЭТАП 2: ИНТЕРЕСЫ (Углубляемся)**\n"
-    "`Ты скорее активный парень или любишь поваляться с фильмом?`\n`Какое твое любимое хобби? Чем горишь?`\n"
-    "`Какую музыку сейчас слушаешь? Скинь название?`\n`Если бы мы сейчас пошли на свидание, куда бы ты меня повел?`\n\n"
-    "🔹 **ЭТАП 3: ТЕПЛОТА И ДОВЕРИЕ**\n"
-    "`Что тебя больше всего вдохновляет в жизни?`\n`Ты умеешь хранить секреты? Мне иногда нужно выговориться...`\n"
-    "`Что для тебя значит 'идеальный вечер вдвоем'?`\n`Что в моем профиле зацепило тебя первым делом?`\n\n"
-    "🔹 **ЭТАП 4: ИГРИВОСТЬ И ФЛИРТ**\n"
-    "`Какая часть моего тела тебе кажется самой сексуальной?`\n`Что бы ты сделал, если бы мы сейчас оказались в одной комнате?`\n"
-    "`Ты любишь, когда тебя слегка дразнят и мучают ожиданием?`\n`Ты умеешь делать массаж? Я сегодня так устала...`\n\n"
-    "🔹 **ЭТАП 5: ЭРОТИКА И СЕКС**\n"
-    "`Какая твоя самая смелая фантазия, которую ты еще не реализовал?`\n`Ты любишь доминировать или тебе нравится подчиняться?`\n"
-    "`Что тебя заводит мгновенно, за секунду?`\n`Как ты относишься к ролевым играм?`\n"
-    "`Что бы ты хотел сделать со мной прямо сейчас, если бы я разрешила?`"
+    "🤝 **БАЗА ЗНАКОМСТВА (150+ ВОПРОСОВ)**\n\n"
+    "🔹 **БЛОК 1: БАЗА**\n"
+    "`Как тебя зовут?` `Сколько лет?` `Откуда ты?` `Кем работаешь?` `Нравится работа?` `Как день прошел?` `Ты сейчас отдыхаешь?` `Что на ужин было?` `Ты соня или жаворонок?` `Что сейчас слушаешь?` `Есть питомцы?` `Твой любимый цвет?` `Что тебя улыбнуло?` `Кофе или чай?` `Какая погода?` `Часто тут бываешь?` `Чем занят, когда скучно?` `Любишь готовить?` `Твой рост?` `Ты спортивный?`\n\n"
+    "🔹 **БЛОК 2: ИНТЕРЕСЫ**\n"
+    "`Активный отдых или диван?` `Где мечтаешь побывать?` `Твой любимый фильм?` `Веришь в судьбу?` `Что тебя смешит?` `Риск или комфорт?` `Лучшее воспоминание?` `Что ценишь в людях?` `Куда позовешь на свидание?` `Ты романтик или реалист?` `Твоя любимая книга?` `Любишь экстрим?` `Любишь море или горы?` `Умеешь играть на чем-то?` `Веришь в интуицию?` `Твое хобби?`\n\n"
+    "🔹 **БЛОК 3: ЛИЧНОЕ**\n"
+    "`О чем мечтаешь в тишине?` `Что во мне зацепило?` `Легко доверяешь людям?` `Хотел бы приехать?` `Веришь в химию через экран?` `О чем стесняешься спросить?` `Ты ревнивый?` `Твой страх?` `Что для тебя уют?` `Ты когда-нибудь влюблялся в сети?` `Что для тебя верность?` `Умеешь признавать ошибки?` `Что делает тебя счастливым?`\n\n"
+    "🔹 **БЛОК 4: ФЛИРТ**\n"
+    "`Любишь, когда тебя дразнят?` `Какая часть моего тела манит?` `Умеешь делать массаж?` `Что сделаешь при встрече?` `Любишь поцелуи в шею?` `Ты нежный или властный?` `Твой любимый запах?` `Часто думаешь обо мне?` `Любишь обниматься?` `Что тебя во мне заводит?` `Любишь шепот на ушко?` `Твой пульс сейчас участился? 😉`\n\n"
+    "🔹 **БЛОК 5: СЕКС**\n"
+    "`Твоя смелая фантазия?` `Доминировать или подчиняться?` `Что заводит мгновенно?` `Как относишься к ролевым?` `Что хочешь со мной прямо сейчас?` `Любишь грязные мысли?` `Как относишься к игрушкам?` `Самое необычное место?` `Любишь прелюдию?` `Любимая поза?` `Свет включен или выключен?` `Твой рекорд по времени?` `Любишь кусаться?`"
 )
 
-# --- СЦЕНАРИИ СЕКСТИНГА (ПРОГРЕВ) ---
+# --- СЦЕНАРИИ СЕКСТИНГА ---
 SEXTING_SCENARIOS = (
-    "🔥 **СЦЕНАРИИ ПРОГРЕВА И СЕКСТИНГА**\n\n"
-    "1. **СЦЕНАРИЙ: 'СЛУЧАЙНЫЙ КАДР'**\n"
-    "— `Ой, пересматривала сейчас галерею и нашла одно фото... я тут такая настоящая. Показать?`\n"
-    "— **Действие:** Жди 'да', кидай лайтовый тизер (лицо/ключицы).\n"
-    "— **Добивка:** `Кажется, ты дар речи потерял... или мне не стоило быть такой откровенной?`\n\n"
-    "2. **СЦЕНАРИЙ: 'ВЫБОР ОБРАЗА'**\n"
-    "— `Хочу сегодня вечером быть особенной для тебя... Поможешь выбрать белье под это платье?`\n"
-    "— **Действие:** Кидай фото двух комплектов (без тебя) на кровати.\n"
-    "— **Добивка:** `Черный — это страсть, а кружево — нежность... Что на мне ты хочешь увидеть первым?`\n\n"
-    "3. **СЦЕНАРИЙ: 'ГОРЯЧИЙ СЕКРЕТ'**\n"
-    "— `Тссс... я сейчас в людном месте, но на мне нет белья. Это наше маленькое преступление.`\n"
-    "— **Действие:** Кидай селфи с хитрой улыбкой из кафе.\n"
-    "— **Добивка:** `Только представь, что я чувствую, зная, что этот секрет только твой...`"
+    "🔥 **СЕКСТИНГ И ПРОГРЕВ**\n\n"
+    "1. `Нашла старое фото... я тут такая настоящая. Показать?` (Тизер: лицо/губы)\n"
+    "2. `Выбираю белье... Поможешь решить, что надеть?` (Тизер: белье на кровати)\n"
+    "3. `Я в людном месте, но на мне нет белья... это наш секрет.` (Тизер: селфи из кафе)\n"
+    "4. `Только из душа, мне так не хватает твоих рук...` (Тизер: плечи в полотенце)\n"
+    "5. `Мне приснился очень горячий сон про нас...` (Тизер: сонные глаза под одеялом)"
 )
-
-# --- ПРОМТЫ РАССЫЛОК ---
-PROMPTS = {
-    "1": "Сделай 5 личных рассылок 'Красота в мелочах'. Пиши на ТЫ. Темы: свечи, белье, какао, фейл.",
-    "2": "Сделай 5 личных рассылок 'Помоги выбрать'. Пиши на ТЫ. Темы: цвет лака, кино, еда, платье.",
-    "3": "Накидай 5 личных рассылок 'За кадром'. Пиши на ТЫ. Темы: беспорядок, усталость, идеи, камера села."
-}
 
 # --- ИНТЕРФЕЙС ---
-def main_menu_markup():
-    markup = types.InlineKeyboardMarkup(row_width=1)
-    markup.add(
-        types.InlineKeyboardButton("🤖 ИИ Ассистент", callback_data="open_ai"),
-        types.InlineKeyboardButton("🤝 Знакомство (Воронка)", callback_data="open_knowing"),
-        types.InlineKeyboardButton("🔥 Секстинг и Прогрев", callback_data="open_sexting"),
-        types.InlineKeyboardButton("📝 Промты для рассылок", callback_data="open_prompts")
+def main_menu():
+    m = types.InlineKeyboardMarkup(row_width=1)
+    m.add(
+        types.InlineKeyboardButton("🤖 ИИ Ассистент", callback_data="ai"),
+        types.InlineKeyboardButton("🤝 Знакомство (150+ вопросов)", callback_data="know"),
+        types.InlineKeyboardButton("🔥 Секстинг и Прогрев", callback_data="sext"),
+        types.InlineKeyboardButton("⬅️ Главное меню", callback_data="menu")
     )
-    return markup
+    return m
 
-def back_to_menu_markup():
-    markup = types.InlineKeyboardMarkup()
-    markup.add(types.InlineKeyboardButton("⬅️ Назад в меню", callback_data="open_main"))
-    return markup
-
-def prompts_menu_markup():
-    markup = types.InlineKeyboardMarkup(row_width=2)
-    buttons = [types.InlineKeyboardButton(f"Тема {i}", callback_data=f"get_p_{i}") for i in range(1, 4)]
-    markup.add(*buttons)
-    markup.add(types.InlineKeyboardButton("⬅️ Назад", callback_data="open_main"))
-    return markup
-
-# --- ОБРАБОТЧИКИ ---
 @bot.message_handler(commands=['start', 'menu'])
-def cmd_menu(message):
-    db_op('INSERT OR REPLACE INTO history (chat_id, messages, state) VALUES (?, ?, ?)', 
-          (message.chat.id, json.dumps([]), "main"))
-    bot.send_message(message.chat.id, "Ethera запущена. Готова к работе.", reply_markup=types.ReplyKeyboardRemove())
-    bot.send_message(message.chat.id, "Главное меню:", reply_markup=main_menu_markup())
+def cmd_start(message):
+    db_op('INSERT OR REPLACE INTO history VALUES (?, ?, ?)', (message.chat.id, '[]', 'main'))
+    bot.send_message(message.chat.id, "Ethera на связи. Погнали?", reply_markup=types.ReplyKeyboardRemove())
+    bot.send_message(message.chat.id, "Выбери раздел:", reply_markup=main_menu())
 
-@bot.callback_query_handler(func=lambda call: True)
-def callback_query(call):
-    chat_id = call.message.chat.id
-    if call.data == "open_ai":
-        db_op('UPDATE history SET state = ? WHERE chat_id = ?', ("ai_chat", chat_id))
-        bot.edit_message_text("🤖 Режим ИИ активен. Жду твой запрос:", chat_id, call.message.message_id, reply_markup=back_to_menu_markup())
-    
-    elif call.data == "open_knowing":
-        bot.send_message(chat_id, KNOWING_LIST, parse_mode="Markdown")
-    
-    elif call.data == "open_sexting":
-        bot.send_message(chat_id, SEXTING_SCENARIOS, parse_mode="Markdown")
+@bot.callback_query_handler(func=lambda c: True)
+def cb(c):
+    cid = c.message.chat.id
+    if c.data == "ai":
+        db_op('UPDATE history SET state="ai" WHERE chat_id=?', (cid,))
+        bot.edit_message_text("🦾 Режим ИИ. Пиши свой запрос (рассылка/ответ):", cid, c.message.message_id, reply_markup=main_menu())
+    elif c.data == "know":
+        bot.send_message(cid, KNOWING_LIST, parse_mode="Markdown")
+    elif c.data == "sext":
+        bot.send_message(cid, SEXTING_SCENARIOS, parse_mode="Markdown")
+    elif c.data == "menu":
+        db_op('UPDATE history SET state="main" WHERE chat_id=?', (cid,))
+        bot.edit_message_text("Главное меню:", cid, c.message.message_id, reply_markup=main_menu())
 
-    elif call.data == "open_prompts":
-        bot.edit_message_text("Выбери тему промта:", chat_id, call.message.message_id, reply_markup=prompts_menu_markup())
-
-    elif call.data.startswith("get_p_"):
-        bot.send_message(chat_id, f"Копируй и отправляй ИИ:\n\n`{PROMPTS.get(call.data.replace('get_p_', ''))}`", parse_mode="Markdown")
-
-    elif call.data == "open_main":
-        db_op('UPDATE history SET state = ? WHERE chat_id = ?', ("main", chat_id))
-        bot.edit_message_text("Главное меню:", chat_id, call.message.message_id, reply_markup=main_menu_markup())
-
-@bot.message_handler(func=lambda message: True)
-def handle_text(message):
-    chat_id = message.chat.id
-    res = db_op('SELECT messages, state FROM history WHERE chat_id = ?', (chat_id,))
-    if not res: return
-
-    history_json, state = res
-    if state == "ai_chat":
-        bot.send_chat_action(chat_id, 'typing')
-        history = json.loads(history_json) if history_json else []
-        history.append({"role": "user", "content": message.text})
-        
+@bot.message_handler(func=lambda m: True)
+def handle_text(m):
+    res = db_op('SELECT messages, state FROM history WHERE chat_id=?', (m.chat.id,))
+    if res and res[1] == "ai":
+        bot.send_chat_action(m.chat.id, 'typing')
+        hist = json.loads(res[0]); hist.append({"role": "user", "content": m.text})
         try:
-            completion = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=[{"role": "system", "content": SYSTEM_PROMPT}] + history,
-                temperature=0.8
-            )
-            answer = completion.choices[0].message.content
-            history.append({"role": "assistant", "content": answer})
-            db_op('UPDATE history SET messages = ? WHERE chat_id = ?', (json.dumps(history[-15:]), chat_id))
-            bot.reply_to(message, answer)
-        except:
-            bot.reply_to(message, "Ошибка связи с ИИ.")
+            comp = client.chat.completions.create(model="llama-3.3-70b-versatile", messages=[{"role": "system", "content": SYSTEM_PROMPT}] + hist)
+            ans = comp.choices[0].message.content
+            hist.append({"role": "assistant", "content": ans})
+            db_op('UPDATE history SET messages=? WHERE chat_id=?', (json.dumps(hist[-15:]), m.chat.id))
+            bot.reply_to(m, ans)
+        except: bot.reply_to(m, "Ошибка ИИ.")
     else:
-        bot.send_message(chat_id, "Включи '🤖 ИИ Ассистент' для общения.", reply_markup=main_menu_markup())
+        bot.reply_to(m, "Сначала нажми '🤖 ИИ Ассистент'.", reply_markup=main_menu())
 
 if __name__ == '__main__':
     bot.infinity_polling()
