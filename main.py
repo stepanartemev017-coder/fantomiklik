@@ -3,7 +3,7 @@ from telebot import types
 from groq import Groq
 
 # ВСТАВЬ СВОИ КЛЮЧИ ТУТ (строго в кавычках!)
-TOKEN = '8749709641:AAEyio0vr4SNNBeGo8uyrdp7lqlG0q56Pfn8' 
+TOKEN = '8749709641:AAHZLNTR7afwWBGKjQLuJAnHUYOdTKT9_fo' 
 AI_KEY = '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'
 
 bot = telebot.TeleBot(TOKEN)
