@@ -21,14 +21,15 @@ def db_op(query, params=()):
     conn.close()
     return res
 
+# Создаем таблицу
 conn = sqlite3.connect('memory.db')
 conn.execute('CREATE TABLE IF NOT EXISTS history (chat_id INTEGER PRIMARY KEY, messages TEXT, state TEXT)')
 conn.close()
 
-# --- ПРОМТЫ ---
+# --- ПРОМТЫ ДЛЯ КОПИРОВАНИЯ ---
 PROMPTS = {
-    "1": "Сделай 5 личных рассылок на тему 'Красота в мелочах'. Пиши строго на ТЫ, обращаясь к одному человеку. Ситуации: новые свечи, белье, чулки, какао, фейл.",
-    "2": "Сделай 5 личных рассылок 'Помоги выбрать'. Пиши на ТЫ. Темы: цвет лака, кино, музыка, еда, платье.",
+    "1": "Сделай 5 личных рассылок на тему 'Красота в мелочах'. Пиши строго на ТЫ, обращаясь к одному человеку. Ситуации: свечи, белье, чулки, какао, фейл.",
+    "2": "Сделай 5 личных рассылок 'Помоги выбрать'. Пиши на ТЫ. Темы: цвет лака, кино, музыка, еда, платье. Фан должен верить, что ты спрашиваешь именно его.",
     "3": "Накидай 5 личных рассылок 'За кадром'. Пиши на ТЫ. Темы: беспорядок, усталость, идеи, фото, камера села.",
     "4": "Сделай 5 утренних рассылок 'Первые мысли'. Нежный тон на ТЫ. Варианты: проснулась, под одеялом, кофе, сон, сонная.",
     "5": "Придумай 5 личных рассылок 'Вечер для нас'. Интимно на ТЫ. Темы: вино, полумрак, музыка, ванна, чокаюсь с аватаркой.",
@@ -66,7 +67,7 @@ def back_to_menu_markup():
     markup.add(types.InlineKeyboardButton("⬅️ Назад в меню", callback_data="open_main"))
     return markup
 
-# --- ОБРАБОТКА ---
+# --- КОМАНДЫ ---
 @bot.message_handler(commands=['start', 'menu'])
 def cmd_menu(message):
     db_op('INSERT OR REPLACE INTO history (chat_id, messages, state) VALUES (?, ?, ?)', 
@@ -89,16 +90,25 @@ def callback_query(call):
         db_op('UPDATE history SET state = ? WHERE chat_id = ?', ("main", chat_id))
         bot.edit_message_text("Главное меню:", chat_id, call.message.message_id, reply_markup=main_menu_markup())
 
+# --- ГЛАВНЫЙ ОБРАБОТЧИК ТЕКСТА ---
 @bot.message_handler(func=lambda message: True)
 def handle_text(message):
     chat_id = message.chat.id
-    # Получаем данные из БД
+    # Запрашиваем данные из базы
     res = db_op('SELECT messages, state FROM history WHERE chat_id = ?', (chat_id,))
     
-    # ИСПРАВЛЕННАЯ ПРОВЕРКА СОСТОЯНИЯ
-    if res and res[1] == "ai_chat":
+    # Если записи нет — создаем её
+    if not res:
+        db_op('INSERT INTO history (chat_id, messages, state) VALUES (?, ?, ?)', (chat_id, json.dumps([]), "main"))
+        bot.send_message(chat_id, "Сначала нажми кнопку '🤖 ИИ Ассистент'.", reply_markup=main_menu_markup())
+        return
+
+    history_json, state = res
+
+    # ПРОВЕРКА СОСТОЯНИЯ
+    if state == "ai_chat":
         bot.send_chat_action(chat_id, 'typing')
-        history = json.loads(res[0]) if res[0] else []
+        history = json.loads(history_json) if history_json else []
         history.append({"role": "user", "content": message.text})
         
         try:
@@ -107,16 +117,17 @@ def handle_text(message):
                 messages=[{"role": "system", "content": SYSTEM_PROMPT}] + history,
                 temperature=0.8
             )
-            # ИСПРАВЛЕНО ОБРАЩЕНИЕ К ОТВЕТУ
+            # Доступ к тексту ответа
             answer = completion.choices[0].message.content
             
             history.append({"role": "assistant", "content": answer})
+            # Сохраняем историю (последние 15 сообщений)
             db_op('UPDATE history SET messages = ? WHERE chat_id = ?', (json.dumps(history[-15:]), chat_id))
             bot.reply_to(message, answer)
         except Exception as e:
             bot.reply_to(message, f"Ошибка ИИ: {str(e)}")
     else:
-        # Если состояние не ai_chat
+        # Если статус не "ai_chat", выкидываем в меню
         bot.send_message(chat_id, "Сначала нажми кнопку '🤖 ИИ Ассистент'.", reply_markup=main_menu_markup())
 
 if __name__ == '__main__':
