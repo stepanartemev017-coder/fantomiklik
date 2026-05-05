@@ -5,65 +5,85 @@ import sqlite3
 import json
 
 # --- ДАННЫЕ ---
-TOKEN = '8749709641:AAHZLNTR7afwWBGKjQLuJAnHUYOdTKT9_fo'
-AI_KEY = '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'
+TOKEN = '8749709641:AAEyio0vr4SNNBeGo8uyrdp7lqlG0q56Pfn8'
+AI_KEY = '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'
 
 bot = telebot.TeleBot(TOKEN)
 client = Groq(api_key=AI_KEY)
 
-# --- БД ---
-conn = sqlite3.connect('memory.db', check_same_thread=False)
-cursor = conn.cursor()
-cursor.execute('CREATE TABLE IF NOT EXISTS history (chat_id INTEGER PRIMARY KEY, messages TEXT)')
-conn.commit()
+# --- ФУНКЦИИ БАЗЫ ДАННЫХ (БЕЗОПАСНЫЕ) ---
+def init_db():
+    conn = sqlite3.connect('memory.db')
+    cursor = conn.cursor()
+    cursor.execute('CREATE TABLE IF NOT EXISTS history (chat_id INTEGER PRIMARY KEY, messages TEXT)')
+    conn.commit()
+    conn.close()
+
+def get_history(chat_id):
+    conn = sqlite3.connect('memory.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT messages FROM history WHERE chat_id = ?', (chat_id,))
+    res = cursor.fetchone()
+    conn.close()
+    return json.loads(res[0]) if res else []
+
+def save_history(chat_id, history):
+    if len(history) > 40: history = history[-40:]
+    conn = sqlite3.connect('memory.db')
+    cursor = conn.cursor()
+    cursor.execute('INSERT OR REPLACE INTO history (chat_id, messages) VALUES (?, ?)', (chat_id, json.dumps(history)))
+    conn.commit()
+    conn.close()
+
+init_db()
 
 @bot.message_handler(commands=['start'])
 def start(message):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add(types.KeyboardButton("ИИ"), types.KeyboardButton("Скрипты"))
-    bot.send_message(message.chat.id, "Здарова, Степан. Я готов к работе. Нужен лютый прогрев, рассылка или просто поболтать? Пиши.", reply_markup=markup)
+    bot.send_message(message.chat.id, "Здарова, Степан. Я готов. Нужен прогрев или просто поболтать? Пиши.", reply_markup=markup)
 
 @bot.message_handler(func=lambda message: True)
 def handle_all_messages(message):
     chat_id = message.chat.id
     
     if message.text == "ИИ":
-        bot.reply_to(message, "Я на связи. Накидать скриптов для фанов или обсудим дела?")
+        bot.reply_to(message, "Я на связи. Накидать скриптов или обсудим дела?")
         return
     if message.text == "Скрипты":
         bot.reply_to(message, "Тут пока пусто.")
         return
 
     bot.send_chat_action(chat_id, 'typing')
-    cursor.execute('SELECT messages FROM history WHERE chat_id = ?', (chat_id,))
-    res = cursor.fetchone()
-    history = json.loads(res[0]) if res else []
+    
+    # Загружаем историю
+    history = get_history(chat_id)
     history.append({"role": "user", "content": message.text})
-    if len(history) > 40: history = history[-40:]
 
     try:
-        completion = client.chat.completions.create(
+   completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[{
                 "role": "system", 
                 "content": (
-                    "Ты — универсальный ИИ-ассистент для профессионального чаттера на OnlyFans. "
-                    "ТВОЯ РОЛЬ: Помогать пользователю (твоему боссу) во всем, что касается ведения анкет. "
-                    "ТЫ ДОЛЖЕН УМЕТЬ: \n"
-                    "1. Писать рассылки разного типа: от 'игривого приветствия' до 'глубокой романтики' и 'жесткого байта'. \n"
-                    "2. Подстраиваться под любой стиль общения: уметь флиртовать от лица модели, создавать иллюзию влюбленности или быть недоступной стервой. \n"
-                    "3. Помогать с психологией: объяснять, как дожать фана на чаевые или покупку дорогого PPV. \n"
-                    "4. Просто общаться: если босс хочет просто поболтать или пошутить — будь классным собеседником. \n"
-                    "ПРАВИЛА: Общайся на 'ты', будь сообразительным, иногда дерзко подкалывай босса. "
-                    "Всегда помни: ты не общаешься с фаном напрямую, ты помогаешь АДМИНУ. "
-                    "Твои примеры текстов должны быть живыми, не шаблонными и максимально естественными. Отвечай на русском."
+                    "Ты — универсальный ИИ-ассистент для профессиональных чаттеров на OnlyFans. "
+                    "Твоя роль: быть надежным напарником для любого пользователя, который к тебе обратился. "
+                    "ТЫ ДОЛЖЕН: \n"
+                    "1. Помогать с креативом: писать рассылки (игривые, романтичные, дерзкие, байтовые). \n"
+                    "2. Быть экспертом в продажах: советовать, как дожать фана на покупку PPV или чаевые. \n"
+                    "3. Быть гибким: уметь подстроиться под стиль общения любой модели. \n"
+                    "4. Быть живым собеседником: общаться на 'ты', с юмором, иногда по-дружески подкалывать, но не мешать работе. \n"
+                    "Ты — просто мощный ИИ-помощник, который понимает специфику индустрии и всегда на стороне чаттера. Отвечай только на русском."
                 )
             }] + history
         )
+        
         answer = completion.choices[0].message.content
         history.append({"role": "assistant", "content": answer})
-        cursor.execute('INSERT OR REPLACE INTO history (chat_id, messages) VALUES (?, ?)', (chat_id, json.dumps(history)))
-        conn.commit()
+        
+        # Сохраняем обновленную историю
+        save_history(chat_id, history)
+        
         bot.reply_to(message, answer)
     except Exception as e:
         bot.reply_to(message, f"Ошибка: {str(e)}")
