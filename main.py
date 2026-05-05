@@ -4,7 +4,7 @@ from groq import Groq
 
 # ДАННЫЕ
 TOKEN = '8749709641:AAGl3ErhSiFvDed1CFdybqPFYhEge5cqlZ0'
-GROQ_KEY = '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'
+GROQ_KEY = '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'
 
 client = Groq(api_key=GROQ_KEY)
 bot = telebot.TeleBot(TOKEN)
