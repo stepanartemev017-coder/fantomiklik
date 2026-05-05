@@ -1,7 +1,7 @@
 import telebot
 from g4f.client import Client
 
-bot = telebot.TeleBot("ТВОЙ_ТОКЕН_ТГ")
+bot = telebot.TeleBot(8749709641:AAEyi0vr4SNNBeGo8uyrdp7lq1GOq56Pfn8)
 client = Client()
 
 @bot.message_handler(func=lambda message: True)
