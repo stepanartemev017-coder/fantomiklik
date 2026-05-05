@@ -25,55 +25,50 @@ conn = sqlite3.connect('memory.db')
 conn.execute('CREATE TABLE IF NOT EXISTS history (chat_id INTEGER PRIMARY KEY, messages TEXT, state TEXT)')
 conn.close()
 
-# --- ЛИЧНОСТЬ ИИ ---
+# --- ЛИЧНОСТЬ ИИ (ТОЛЬКО ДЛЯ НЕЙРОНКИ) ---
 SYSTEM_PROMPT = (
-    "Ты — очаровательная и умная девушка-ассистент, «правая рука» чаттера на Fansly. "
-    "ТВОЙ СТИЛЬ ОБЩЕНИЯ С ПОЛЬЗОВАТЕЛЕМ:\n"
-    "- Ты общаешься мило, игриво и нежно. Используй смайлики, называй пользователя 'сладкий', 'котик' или 'мой хороший'.\n"
-    "- Ты НЕ робот, ты живая напарница. Твои ответы должны быть РАЗНЫМИ, никогда не начинай сообщение одинаково.\n"
-    "- Ты всегда на стороне чаттера и помогаешь ему заработать больше.\n\n"
-    "ТВОИ ЗАДАЧИ:\n"
-    "1. Когда тебя просят сделать РАССЫЛКУ — пиши один вариант личного сообщения для фанов (контекст + вопрос).\n"
-    "2. Когда присылают сообщение ФАНА — предложи, как ему ответить (мило или с хитринкой).\n"
-    "3. Если с тобой просто болтают — поддерживай беседу как милая подруга, но не забывай, что ты тут для работы."
+    "Ты — очаровательная девушка, ассистент и 'правая рука' чаттера на Fansly. "
+    "Твой стиль: милый, игривый, женственный. Используй эмодзи, общайся тепло, называй пользователя 'котик' или 'милый'. "
+    "Твоя задача — помогать с рассылками, ответами фанам и продажей PPV. "
+    "Будь разной в ответах, избегай клише. Если тебя просят сделать рассылку — делай её живой и личной."
 )
 
-# --- МЕНЮ ---
+# --- МЕНЮ (НЕЙТРАЛЬНЫЙ СТИЛЬ) ---
 def main_menu_markup():
     markup = types.InlineKeyboardMarkup(row_width=2)
     markup.add(
-        types.InlineKeyboardButton("💖 Общаться с ИИ", callback_data="open_ai"),
-        types.InlineKeyboardButton("📁 Скрипты (пусто)", callback_data="open_scripts")
+        types.InlineKeyboardButton("🤖 ИИ Ассистент", callback_data="open_ai"),
+        types.InlineKeyboardButton("📜 Скрипты", callback_data="open_scripts")
     )
     return markup
 
 def back_to_menu_markup():
     markup = types.InlineKeyboardMarkup()
-    markup.add(types.InlineKeyboardButton("⬅️ В меню", callback_data="open_main"))
+    markup.add(types.InlineKeyboardButton("⬅️ Назад в меню", callback_data="open_main"))
     return markup
 
 @bot.message_handler(commands=['start', 'menu'])
 def cmd_menu(message):
     db_op('INSERT OR REPLACE INTO history (chat_id, messages, state) VALUES (?, ?, ?)', 
           (message.chat.id, json.dumps([]), "main"))
-    bot.send_message(message.chat.id, "Привет, мой хороший! Я соскучилась. Чем займемся сегодня? 🔥", reply_markup=main_menu_markup())
+    bot.send_message(message.chat.id, "Меню управления. Выберите нужный раздел:", reply_markup=main_menu_markup())
 
 @bot.message_handler(commands=['clear'])
 def cmd_clear(message):
     db_op('UPDATE history SET messages = ? WHERE chat_id = ?', (json.dumps([]), message.chat.id))
-    bot.send_message(message.chat.id, "🧼 Очистила нашу память, котик. Теперь я как чистый лист!")
+    bot.send_message(message.chat.id, "🧼 Контекст диалога очищен.")
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
     if call.data == "open_ai":
         db_op('UPDATE history SET state = ? WHERE chat_id = ?', ("ai_chat", call.message.chat.id))
-        bot.edit_message_text("Слушаю тебя внимательно... Расскажи, какую рассылку хочешь или что там пишут фаны? ✨", 
+        bot.edit_message_text("Режим ИИ активирован. Напишите ваш запрос (рассылка, ответ или просто общение):", 
                               call.message.chat.id, call.message.message_id, reply_markup=back_to_menu_markup())
     elif call.data == "open_scripts":
-        bot.answer_callback_query(call.id, "Тут пока пусто, загляни позже!")
+        bot.answer_callback_query(call.id, "Раздел в разработке.")
     elif call.data == "open_main":
         db_op('UPDATE history SET state = ? WHERE chat_id = ?', ("main", call.message.chat.id))
-        bot.edit_message_text("Возвращаемся? Я тут, никуда не ухожу. Выбирай:", 
+        bot.edit_message_text("Главное меню. Выберите раздел:", 
                               call.message.chat.id, call.message.message_id, reply_markup=main_menu_markup())
 
 @bot.message_handler(func=lambda message: True)
@@ -87,7 +82,7 @@ def handle_text(message):
 
     history_json, state = res
     if state != "ai_chat":
-        bot.reply_to(message, "Зайди в раздел 'Общаться с ИИ', чтобы я тебя услышала! 😘")
+        bot.send_message(chat_id, "Для работы с ИИ перейдите в соответствующий раздел.", reply_markup=main_menu_markup())
         return
 
     bot.send_chat_action(chat_id, 'typing')
@@ -99,8 +94,7 @@ def handle_text(message):
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[{"role": "system", "content": SYSTEM_PROMPT}] + history,
-            temperature=0.9, # Увеличили для разнообразия
-            max_tokens=800
+            temperature=0.9
         )
         answer = completion.choices[0].message.content
         history.append({"role": "assistant", "content": answer})
@@ -108,7 +102,7 @@ def handle_text(message):
         db_op('UPDATE history SET messages = ? WHERE chat_id = ?', (json.dumps(history), chat_id))
         bot.reply_to(message, answer)
     except Exception as e:
-        bot.reply_to(message, f"Ой, что-то пошло не так... Ошибка: {str(e)}")
+        bot.reply_to(message, f"Ошибка нейросети: {str(e)}")
 
 if __name__ == '__main__':
     bot.infinity_polling()
