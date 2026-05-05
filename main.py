@@ -25,10 +25,9 @@ conn = sqlite3.connect('memory.db')
 conn.execute('CREATE TABLE IF NOT EXISTS history (chat_id INTEGER PRIMARY KEY, messages TEXT, state TEXT)')
 conn.close()
 
-# --- ПРОМТЫ (ДЛЯ КОПИРОВАНИЯ) ---
 PROMPTS = {
     "1": "Сделай 5 личных рассылок на тему 'Красота в мелочах'. Пиши строго на ТЫ, обращаясь к одному человеку. Ситуации: новые свечи, белье, чулки, какао, фейл.",
-    "2": "Сделай 5 личных рассылок 'Помоги выбрать'. Пиши на ТЫ. Темы: цвет лака, кино, музыка, еда, платье. Фан должен верить, что ты спрашиваешь именно его.",
+    "2": "Сделай 5 личных рассылок 'Помоги выбрать'. Пиши на ТЫ. Темы: цвет лака, кино, музыка, еда, платье.",
     "3": "Накидай 5 личных рассылок 'За кадром'. Пиши на ТЫ. Темы: беспорядок, усталость, идеи, фото, камера села.",
     "4": "Сделай 5 утренних рассылок 'Первые мысли'. Нежный тон на ТЫ. Варианты: проснулась, под одеялом, кофе, сон, сонная.",
     "5": "Придумай 5 личных рассылок 'Вечер для нас'. Интимно на ТЫ. Темы: вино, полумрак, музыка, ванна, чокаюсь с аватаркой.",
@@ -78,7 +77,7 @@ def callback_query(call):
     chat_id = call.message.chat.id
     if call.data == "open_ai":
         db_op('UPDATE history SET state = ? WHERE chat_id = ?', ("ai_chat", chat_id))
-        bot.edit_message_text("🦾 Режим ИИ активен. Пиши свой запрос:", 
+        bot.edit_message_text("🦾 Режим ИИ активен. Жду твой запрос:", 
                               chat_id, call.message.message_id, reply_markup=back_to_menu_markup())
     elif call.data == "open_prompts":
         bot.edit_message_text("Выбери тему промта:", chat_id, call.message.message_id, reply_markup=prompts_menu_markup())
@@ -92,10 +91,11 @@ def callback_query(call):
 @bot.message_handler(func=lambda message: True)
 def handle_text(message):
     chat_id = message.chat.id
+    # Получаем и историю, и состояние
     res = db_op('SELECT messages, state FROM history WHERE chat_id = ?', (chat_id,))
     
-    # ПРОВЕРКА СОСТОЯНИЯ (ИСПРАВЛЕНО)
-    if res and res[1] == "ai_chat":
+    # ИСПРАВЛЕННАЯ ПРОВЕРКА:
+    if res and str(res[1]).strip() == "ai_chat":
         bot.send_chat_action(chat_id, 'typing')
         history = json.loads(res[0]) if res[0] else []
         history.append({"role": "user", "content": message.text})
@@ -113,6 +113,7 @@ def handle_text(message):
         except Exception as e:
             bot.reply_to(message, f"Ошибка ИИ: {str(e)}")
     else:
+        # Если состояние не ai_chat, возвращаем в меню
         bot.send_message(chat_id, "Сначала нажми кнопку '🤖 ИИ Ассистент'.", reply_markup=main_menu_markup())
 
 if __name__ == '__main__':
