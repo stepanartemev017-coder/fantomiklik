@@ -4,7 +4,7 @@ from groq import Groq
 import sqlite3
 import json
 
-# --- ТВОИ КЛЮЧИ ---
+# --- КЛЮЧИ ---
 TOKEN = '8749709641:AAHZLNTR7afwWBGKjQLuJAnHUYOdTKT9_fo'
 AI_KEY = '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'
 
@@ -38,7 +38,7 @@ def handle_msg(message):
 
     bot.send_chat_action(chat_id, 'typing')
     
-    # ИСПРАВЛЕНО: Берем первый элемент кортежа res[0]
+    # Получаем историю (берем первый элемент кортежа)
     res = db_op('SELECT messages FROM history WHERE chat_id = ?', (chat_id,))
     history = json.loads(res[0]) if res and res[0] else []
     
@@ -46,6 +46,7 @@ def handle_msg(message):
     if len(history) > 30: history = history[-30:]
 
     try:
+        # ЗАПРОС К НЕЙРОНКЕ
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[{
@@ -59,7 +60,10 @@ def handle_msg(message):
                 )
             }] + history
         )
-        answer = completion.choices.message.content
+        
+        # ИСПРАВЛЕННЫЙ СПОСОБ ПОЛУЧЕНИЯ ТЕКСТА:
+        answer = completion.choices[0].message.content
+        
         history.append({"role": "assistant", "content": answer})
         
         db_op('INSERT OR REPLACE INTO history (chat_id, messages) VALUES (?, ?)', (chat_id, json.dumps(history)))
