@@ -13,16 +13,25 @@ client = Groq(api_key=AI_KEY)
 # --- ПРОВЕРКА БАЗЫ ДАННЫХ ---
 def init_db():
     try:
-        # Прямо указываем библиотеку при подключении
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "system", "content": "Ты умный и дерзкий помощник. На 'ты', с юмором. На русском."}] + history
+        )
+        
+        # ИСПРАВЛЕННАЯ СТРОКА:
+        answer = completion.choices[0].message.content
+        
+        history.append({"role": "assistant", "content": answer})
+        
+        # Сохранение истории
+        if len(history) > 40: history = history[-40:]
         conn = sqlite3.connect('memory.db')
         cursor = conn.cursor()
-        cursor.execute('CREATE TABLE IF NOT EXISTS history (chat_id INTEGER PRIMARY KEY, messages TEXT)')
+        cursor.execute('INSERT OR REPLACE INTO history (chat_id, messages) VALUES (?, ?)', (chat_id, json.dumps(history)))
         conn.commit()
         conn.close()
-        print("База данных подключена успешно!")
-    except Exception as e:
-        print(f"Ошибка в базе: {e}")
-
+        
+        bot.reply_to(message, answer)
 init_db()
 
 @bot.message_handler(commands=['start'])
