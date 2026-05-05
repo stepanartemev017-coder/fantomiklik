@@ -4,7 +4,7 @@ from groq import Groq
 import sqlite3
 import json
 
-# ТВОИ КЛЮЧИ
+# --- ДАННЫЕ ---
 TOKEN = '8749709641:AAHZLNTR7afwWBGKjQLuJAnHUYOdTKT9_fo'
 AI_KEY = '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'
 
