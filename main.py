@@ -4,9 +4,9 @@ from groq import Groq
 import sqlite3
 import json
 
-# --- ДАННЫЕ ---
-TOKEN = '8749709641:AAEyio0vr4SNNBeGo8uyrdp7lqlG0q56Pfn8'
-AI_KEY = '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'
+# --- ТВОИ ДАННЫЕ ---
+TOKEN = '8749709641:AAHZLNTR7afwWBGKjQLuJAnHUYOdTKT9_fo'
+AI_KEY = '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'
 
 bot = telebot.TeleBot(TOKEN)
 client = Groq(api_key=AI_KEY)
@@ -35,45 +35,44 @@ def save_history(chat_id, history):
     conn.commit()
     conn.close()
 
+# Инициализируем БД один раз при запуске
 init_db()
 
 @bot.message_handler(commands=['start'])
 def start(message):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add(types.KeyboardButton("ИИ"), types.KeyboardButton("Скрипты"))
-    bot.send_message(message.chat.id, "Здарова, Степан. Я готов. Нужен прогрев или просто поболтать? Пиши.", reply_markup=markup)
+    bot.send_message(message.chat.id, "Здарова! Я на связи. Нужен прогрев для фанов или просто поболтать? Пиши.", reply_markup=markup)
 
 @bot.message_handler(func=lambda message: True)
 def handle_all_messages(message):
     chat_id = message.chat.id
     
+    # Обработка кнопок
     if message.text == "ИИ":
-        bot.reply_to(message, "Я на связи. Накидать скриптов или обсудим дела?")
+        bot.reply_to(message, "Я в деле. Накидать идей для рассылок или обсудим стратегию?")
         return
     if message.text == "Скрипты":
-        bot.reply_to(message, "Тут пока пусто.")
+        bot.reply_to(message, "Тут пока пусто, скрипты на базе будут позже.")
         return
 
     bot.send_chat_action(chat_id, 'typing')
     
-    # Загружаем историю
+    # ЧИТАЕМ ИСТОРИЮ (безопасно)
     history = get_history(chat_id)
     history.append({"role": "user", "content": message.text})
 
     try:
-   completion = client.chat.completions.create(
+        completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[{
                 "role": "system", 
                 "content": (
                     "Ты — универсальный ИИ-ассистент для профессиональных чаттеров на OnlyFans. "
-                    "Твоя роль: быть надежным напарником для любого пользователя, который к тебе обратился. "
-                    "ТЫ ДОЛЖЕН: \n"
-                    "1. Помогать с креативом: писать рассылки (игривые, романтичные, дерзкие, байтовые). \n"
-                    "2. Быть экспертом в продажах: советовать, как дожать фана на покупку PPV или чаевые. \n"
-                    "3. Быть гибким: уметь подстроиться под стиль общения любой модели. \n"
-                    "4. Быть живым собеседником: общаться на 'ты', с юмором, иногда по-дружески подкалывать, но не мешать работе. \n"
-                    "Ты — просто мощный ИИ-помощник, который понимает специфику индустрии и всегда на стороне чаттера. Отвечай только на русском."
+                    "Твоя роль: быть надежным напарником для любого пользователя. "
+                    "Помогай с креативом, рассылками, советами по продажам и дожиму фанов. "
+                    "Общайся на 'ты', с юмором, иногда дерзко подкалывай, но не мешай работе. "
+                    "Ты понимаешь специфику индустрии и всегда на стороне чаттера. Отвечай только на русском."
                 )
             }] + history
         )
@@ -81,7 +80,7 @@ def handle_all_messages(message):
         answer = completion.choices[0].message.content
         history.append({"role": "assistant", "content": answer})
         
-        # Сохраняем обновленную историю
+        # СОХРАНЯЕМ ИСТОРИЮ (безопасно)
         save_history(chat_id, history)
         
         bot.reply_to(message, answer)
