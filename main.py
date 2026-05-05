@@ -1,4 +1,4 @@
-import telebot
+pythonimport telebot
 from telebot import types
 from groq import Groq
 import sqlite3
@@ -29,97 +29,99 @@ conn.close()
 SYSTEM_PROMPT = (
     "Ты — Ethera, профессиональный ассистент чаттера на Fansly. "
     "Пользователь — твой босс. Общайся с ним мило и по делу. "
-    "ПРАВИЛО ДЛЯ ТЕКСТОВ ФАНАМ: Пиши СТРОГО НА 'ТЫ', обращаясь к одному человеку лично. "
+    "ПРАВИЛО ДЛЯ ТЕКСТОВ ФАНАМ: Пиши СТРОГО НА 'ТЫ', обращаясь к одному конкретному человеку. "
     "Используй структуру: Лайв-контекст -> Игривый вопрос."
 )
 
-# --- ДАННЫЕ РАЗДЕЛОВ ---
+# --- БАЗА ЗНАКОМСТВА (НУМЕРОВАННЫЙ СПИСОК) ---
 KNOWING_LIST = (
     "🤝 **СПИСОК ВОПРОСОВ ДЛЯ ЗНАКОМСТВА**\n\n"
     "1. `Как тебя зовут?` \n2. `Сколько тебе лет?` \n3. `Из какого ты города?` \n4. `Кем ты работаешь?` \n5. `Нравится работа?` \n"
-    "6. `Как твой день прошел?` \n7. `Ты сейчас отдыхаешь?` \n8. `Что сейчас слушаешь?` \n9. `Твой рост?` \n10. `Веришь в судьбу?` \n"
-    "11. `Что во мне зацепило?` \n12. `Веришь в химию через экран?` \n13. `Какая часть моего тела манит?` \n14. `Умеешь делать массаж?` \n15. `Твоя смелая фантазия?` \n"
-    "*(Для копирования просто нажми на вопрос)*"
+    "6. `Как твой день прошел?` \n7. `Ты сейчас отдыхаешь?` \n8. `Что на ужин было?` \n9. `Что сейчас слушаешь?` \n10. `Твой рост?` \n"
+    "11. `Активный отдых или диван?` \n12. `Где мечтаешь побывать?` \n13. `Твой любимый фильм?` \n14. `Веришь в судьбу?` \n15. `Что тебя смешит?` \n"
+    "16. `Лучшее воспоминание?` \n17. `Что ценишь в людях?` \n18. `Ты романтик или реалист?` \n19. `О чем мечтаешь в тишине?` \n20. `Что во мне зацепило?` \n"
+    "21. `Веришь в химию через экран?` \n22. `О чем стесняешься спросить?` \n23. `Любишь, когда тебя дразнят?` \n24. `Какая часть моего тела манит?` \n25. `Умеешь делать массаж?` \n"
+    "26. `Твоя смелая фантазия?` \n27. `Доминировать или подчиняться?` \n28. `Что заводит мгновенно?` \n29. `Как относишься к ролевым?` \n30. `Что хочешь со мной прямо сейчас?`"
 )
 
+# --- СЦЕНАРИИ СЕКСТИНГА (ПОЛНЫЕ) ---
 SEXTING_LIST = (
-    "🔥 **СЦЕНАРИИ СЕКСТИНГА**\n\n"
-    "1. `Нашла старое фото... я тут такая настоящая. Показать?` \n"
-    "2. `Выбираю белье... Поможешь решить, что надеть?` \n"
-    "3. `Тссс... я сейчас в людном месте, но на мне нет белья.` \n"
-    "4. `Я только что из душа, и тут так прохладно...` \n"
-    "5. `Мне приснился очень яркий сон... и ты там был голышом. 😊`"
+    "🔥 **СЦЕНАРИИ ПРОГРЕВА И СЕКСТИНГА**\n\n"
+    "1. **СЦЕНАРИЙ: 'СЛУЧАЙНЫЙ КАДР'**\n"
+    "— `Ой, пересматривала сейчас галерею и нашла одно фото... я тут такая настоящая. Показать?` \n"
+    "— **Тизер:** Лицо/губы. **Добивка:** `Кажется, ты дар речи потерял... 😉` \n\n"
+    "2. **СЦЕНАРИЙ: 'ВЫБОР ОБРАЗА'**\n"
+    "— `Хочу сегодня вечером быть особенной для тебя... Поможешь выбрать белье под это платье?` \n"
+    "— **Тизер:** Белье на кровати. **Добивка:** `Черный — это страсть, а кружево — нежность... Что выберешь?` \n\n"
+    "3. **СЦЕНАРИЙ: 'ГОРЯЧИЙ СЕКРЕТ'**\n"
+    "— `Тссс... я сейчас в людном месте, но на мне нет белья. Это наше маленькое преступление.` \n"
+    "— **Тизер:** Селфи из кафе. **Добивка:** `Только представь, что я чувствую, зная, что этот секрет только твой...` \n\n"
+    "4. **СЦЕНАРИЙ: 'ПОСЛЕ ДУША'**\n"
+    "— `Я только что из душа, и тут так прохладно... Хочется, чтобы кто-то теплый был рядом.` \n"
+    "— **Тизер:** Плечи в полотенце. **Добивка:** `Хочу почувствовать твои руки на своей коже...` \n\n"
+    "5. **СЦЕНАРИЙ: 'СОН'**\n"
+    "— `Мне приснился очень яркий сон... и ты там был не совсем в одежде. 😊` \n"
+    "— **Тизер:** Сонные глаза под одеялом. **Добивка:** `Если я расскажу детали, ты не сможешь работать... Рискнем?`"
 )
 
+# --- ПРОМТЫ ДЛЯ ИИ ---
 PROMPTS_LIST = (
-    "📝 **ПРОМТЫ ДЛЯ ИИ**\n\n"
-    "1. `Сделай 5 рассылок на тему 'Уютный вечер'. Пиши на ТЫ.`\n"
-    "2. `Придумай 5 рассылок 'Я в магазине белья'. Игриво на ТЫ.`\n"
-    "3. `Накидай 5 утренних рассылок 'Только проснулась'.`"
+    "📝 **ПРОМТЫ ДЛЯ РАССЫЛОК (Копируй и шли ИИ)**\n\n"
+    "1. `Сделай 5 личных рассылок на тему 'Уютный вечер'. Пиши строго на ТЫ. Структура: контекст + вопрос.` \n\n"
+    "2. `Придумай 5 рассылок 'Я в магазине белья'. Пиши игриво на ТЫ, создай интригу.` \n\n"
+    "3. `Накидай 5 утренних рассылок 'Только проснулась'. Тон нежный, обращение на ТЫ.` \n\n"
+    "4. `Сделай рассылку-байкер: я начала что-то рассказывать и 'отвлеклась'. Создай любопытство.`"
 )
 
-# --- КЛАВИАТУРА МЕНЮ ---
-def main_keyboard():
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    markup.add(
-        types.KeyboardButton("🤖 ИИ Ассистент"),
-        types.KeyboardButton("🤝 Знакомство"),
-        types.KeyboardButton("🔥 Секстинг"),
-        types.KeyboardButton("📝 Промты ИИ")
+# --- ИНТЕРФЕЙС ---
+def main_menu():
+    m = types.InlineKeyboardMarkup(row_width=1)
+    m.add(
+        types.InlineKeyboardButton("🤖 ИИ Ассистент", callback_data="ai"),
+        types.InlineKeyboardButton("🤝 Знакомство", callback_data="know"),
+        types.InlineKeyboardButton("🔥 Секстинг", callback_data="sext"),
+        types.InlineKeyboardButton("📝 Промты ИИ", callback_data="prompts"),
+        types.InlineKeyboardButton("⬅️ Главное меню", callback_data="menu")
     )
-    return markup
+    return m
 
-# --- ОБРАБОТЧИКИ КОМАНД ---
 @bot.message_handler(commands=['start', 'menu'])
 def cmd_start(message):
     db_op('INSERT OR REPLACE INTO history VALUES (?, ?, ?)', (message.chat.id, '[]', 'main'))
-    bot.send_message(message.chat.id, "Ethera на связи. Инструменты в клавиатуре ниже:", reply_markup=main_keyboard())
+    bot.send_message(message.chat.id, "Ethera на связи. Все инструменты восстановлены.", reply_markup=types.ReplyKeyboardRemove())
+    bot.send_message(message.chat.id, "Выбери раздел:", reply_markup=main_menu())
 
-# --- ГЛАВНЫЙ ОБРАБОТЧИК ТЕКСТА ---
-@bot.message_handler(func=lambda message: True)
-def handle_msg(message):
-    chat_id = message.chat.id
-    text = message.text
+@bot.callback_query_handler(func=lambda c: True)
+def cb(c):
+    cid = c.message.chat.id
+    if c.data == "ai":
+        db_op('UPDATE history SET state="ai" WHERE chat_id=?', (cid,))
+        bot.edit_message_text("🦾 Режим ИИ активен. Жду твой запрос:", cid, c.message.message_id, reply_markup=main_menu())
+    elif c.data == "know":
+        bot.send_message(cid, KNOWING_LIST, parse_mode="Markdown")
+    elif c.data == "sext":
+        bot.send_message(cid, SEXTING_LIST, parse_mode="Markdown")
+    elif c.data == "prompts":
+        bot.send_message(cid, PROMPTS_LIST, parse_mode="Markdown")
+    elif c.data == "menu":
+        db_op('UPDATE history SET state="main" WHERE chat_id=?', (cid,))
+        bot.edit_message_text("Главное меню:", cid, c.message.message_id, reply_markup=main_menu())
 
-    # Обработка нажатий кнопок клавиатуры
-    if text == "🤖 ИИ Ассистент":
-        db_op('UPDATE history SET state="ai" WHERE chat_id=?', (chat_id,))
-        bot.send_message(chat_id, "🦾 Режим ИИ активен. Отправь ситуацию или промт, и я помогу с текстом.")
-        return
-
-    elif text == "🤝 Знакомство":
-        bot.send_message(chat_id, KNOWING_LIST, parse_mode="Markdown")
-        return
-
-    elif text == "🔥 Секстинг":
-        bot.send_message(chat_id, SEXTING_LIST, parse_mode="Markdown")
-        return
-
-    elif text == "📝 Промты ИИ":
-        bot.send_message(chat_id, PROMPTS_LIST, parse_mode="Markdown")
-        return
-
-    # Логика работы с ИИ
-    res = db_op('SELECT messages, state FROM history WHERE chat_id=?', (chat_id,))
+@bot.message_handler(func=lambda m: True)
+def handle_text(m):
+    res = db_op('SELECT messages, state FROM history WHERE chat_id=?', (m.chat.id,))
     if res and res[1] == "ai":
-        bot.send_chat_action(chat_id, 'typing')
-        history = json.loads(res[0])
-        history.append({"role": "user", "content": text})
-        
+        bot.send_chat_action(m.chat.id, 'typing')
+        hist = json.loads(res[0]); hist.append({"role": "user", "content": m.text})
         try:
-            completion = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=[{"role": "system", "content": SYSTEM_PROMPT}] + history,
-                temperature=0.8
-            )
-            answer = completion.choices[0].message.content
-            history.append({"role": "assistant", "content": answer})
-            db_op('UPDATE history SET messages=? WHERE chat_id=?', (json.dumps(history[-15:]), chat_id))
-            bot.reply_to(message, answer)
-        except:
-            bot.reply_to(message, "Ошибка связи с ИИ. Попробуй позже.")
+            comp = client.chat.completions.create(model="llama-3.3-70b-versatile", messages=[{"role": "system", "content": SYSTEM_PROMPT}] + hist)
+            ans = comp.choices[0].message.content
+            hist.append({"role": "assistant", "content": ans})
+            db_op('UPDATE history SET messages=? WHERE chat_id=?', (json.dumps(hist[-15:]), m.chat.id))
+            bot.reply_to(m, ans)
+        except: bot.reply_to(m, "Ошибка ИИ.")
     else:
-        bot.reply_to(message, "Выбери нужный раздел в меню клавиатуры.", reply_markup=main_keyboard())
+        bot.reply_to(m, "Нажми '🤖 ИИ Ассистент', чтобы начать общение.", reply_markup=main_menu())
 
 if __name__ == '__main__':
     bot.infinity_polling()
