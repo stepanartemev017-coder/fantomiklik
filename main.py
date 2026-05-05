@@ -1,32 +1,42 @@
 import telebot
-import g4f
-from g4f.client import Client
+import requests
 
-# ВАЖНО: Токен ОБЯЗАТЕЛЬНО должен быть в кавычках
-TOKEN = '8749709641:AAEyi0vr4SNNBeGo8uyrdp7lq1GOq56Pfn8'
+# --- ТВОИ ДАННЫЕ ---
+TOKEN = '8749709641:AAEyio0vr4SNNBeGo8uyrdp7lqlG0q56Pfn8'
+AI_KEY = 'sk-f84ab856270742b8865066c608453d5e' 
+
 bot = telebot.TeleBot(TOKEN)
 
 @bot.message_handler(commands=['start'])
 def start(message):
-    bot.reply_to(message, "Привет! Я бесплатная нейросеть. Напиши свой вопрос, и я отвечу!")
+    bot.reply_to(message, "Привет! Я работаю на стабильном API DeepSeek. Спрашивай!")
 
 @bot.message_handler(func=lambda message: True)
 def chat(message):
-    # Показываем статус "печатает"
     bot.send_chat_action(message.chat.id, 'typing')
     
-    try:
-        client = Client()
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": message.text}],
-        )
-        answer = response.choices.message.content
-        bot.reply_to(message, answer)
-    except Exception as e:
-        print(f"Ошибка: {e}")
-        bot.reply_to(message, "Извини, бесплатный сервер сейчас перегружен. Попробуй еще раз через минуту.")
+    payload = {
+        "model": "deepseek-chat",
+        "messages": [
+            {"role": "system", "content": "Ты дружелюбный ассистент."},
+            {"role": "user", "content": message.text}
+        ],
+        "stream": False
+    }
+    
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {AI_KEY}"
+    }
 
-if __name__ == '__main__':
-    print("Бот успешно запущен!")
-    bot.infinity_polling()
+    try:
+        response = requests.post("https://deepseek.com", json=payload, headers=headers, timeout=60)
+        if response.status_code == 200:
+            bot_text = response.json()['choices']['message']['content']
+            bot.reply_to(message, bot_text)
+        else:
+            bot.reply_to(message, f"Ошибка API: {response.status_code}. Проверь баланс в личном кабинете DeepSeek.")
+    except Exception as e:
+        bot.reply_to(message, "Ошибка связи с сервером нейросети.")
+
+bot.infinity_polling()
