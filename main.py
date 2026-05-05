@@ -25,15 +25,18 @@ conn = sqlite3.connect('memory.db')
 conn.execute('CREATE TABLE IF NOT EXISTS history (chat_id INTEGER PRIMARY KEY, messages TEXT, state TEXT)')
 conn.close()
 
-# --- ЛИЧНОСТЬ ИИ (ТОЛЬКО ДЛЯ НЕЙРОНКИ) ---
+# --- СБАЛАНСИРОВАННАЯ ЛИЧНОСТЬ ---
 SYSTEM_PROMPT = (
-    "Ты — очаровательная девушка, ассистент и 'правая рука' чаттера на Fansly. "
-    "Твой стиль: милый, игривый, женственный. Используй эмодзи, общайся тепло, называй пользователя 'котик' или 'милый'. "
-    "Твоя задача — помогать с рассылками, ответами фанам и продажей PPV. "
-    "Будь разной в ответах, избегай клише. Если тебя просят сделать рассылку — делай её живой и личной."
+    "Ты — умная и обаятельная девушка, ассистент чаттера на Fansly. "
+    "Твой стиль общения: женственный, теплый и профессиональный. "
+    "ВАЖНО: Можно использовать ласковые обращения (например, 'дорогой', 'милый' или 'хороший'), "
+    "но делай это РЕДКО и уместно. Не чаще одного раза в несколько сообщений. "
+    "Никакого детского лепета, 'обнимашек' в звездочках и излишней приторности. "
+    "Ты — надежный напарник, который понимает специфику Fansly. "
+    "Помогай с рассылками, ответами фанам и продажами, общаясь на 'ты' в приятной, дружеской манере."
 )
 
-# --- МЕНЮ (НЕЙТРАЛЬНЫЙ СТИЛЬ) ---
+# --- ИНТЕРФЕЙС ---
 def main_menu_markup():
     markup = types.InlineKeyboardMarkup(row_width=2)
     markup.add(
@@ -51,24 +54,24 @@ def back_to_menu_markup():
 def cmd_menu(message):
     db_op('INSERT OR REPLACE INTO history (chat_id, messages, state) VALUES (?, ?, ?)', 
           (message.chat.id, json.dumps([]), "main"))
-    bot.send_message(message.chat.id, "Меню управления. Выберите нужный раздел:", reply_markup=main_menu_markup())
+    bot.send_message(message.chat.id, "Главное меню. Выбери раздел для работы:", reply_markup=main_menu_markup())
 
 @bot.message_handler(commands=['clear'])
 def cmd_clear(message):
     db_op('UPDATE history SET messages = ? WHERE chat_id = ?', (json.dumps([]), message.chat.id))
-    bot.send_message(message.chat.id, "🧼 Контекст диалога очищен.")
+    bot.send_message(message.chat.id, "🧼 Память ИИ очищена.")
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
     if call.data == "open_ai":
         db_op('UPDATE history SET state = ? WHERE chat_id = ?', ("ai_chat", call.message.chat.id))
-        bot.edit_message_text("Режим ИИ активирован. Напишите ваш запрос (рассылка, ответ или просто общение):", 
+        bot.edit_message_text("Я на связи. Какую задачу сегодня разберем?", 
                               call.message.chat.id, call.message.message_id, reply_markup=back_to_menu_markup())
     elif call.data == "open_scripts":
-        bot.answer_callback_query(call.id, "Раздел в разработке.")
+        bot.answer_callback_query(call.id, "Раздел пока не заполнен.")
     elif call.data == "open_main":
         db_op('UPDATE history SET state = ? WHERE chat_id = ?', ("main", call.message.chat.id))
-        bot.edit_message_text("Главное меню. Выберите раздел:", 
+        bot.edit_message_text("Главное меню. Выбери раздел:", 
                               call.message.chat.id, call.message.message_id, reply_markup=main_menu_markup())
 
 @bot.message_handler(func=lambda message: True)
@@ -82,7 +85,7 @@ def handle_text(message):
 
     history_json, state = res
     if state != "ai_chat":
-        bot.send_message(chat_id, "Для работы с ИИ перейдите в соответствующий раздел.", reply_markup=main_menu_markup())
+        bot.send_message(chat_id, "Для общения с ИИ нажми кнопку ниже:", reply_markup=main_menu_markup())
         return
 
     bot.send_chat_action(chat_id, 'typing')
@@ -94,7 +97,7 @@ def handle_text(message):
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[{"role": "system", "content": SYSTEM_PROMPT}] + history,
-            temperature=0.9
+            temperature=0.75
         )
         answer = completion.choices[0].message.content
         history.append({"role": "assistant", "content": answer})
@@ -102,7 +105,7 @@ def handle_text(message):
         db_op('UPDATE history SET messages = ? WHERE chat_id = ?', (json.dumps(history), chat_id))
         bot.reply_to(message, answer)
     except Exception as e:
-        bot.reply_to(message, f"Ошибка нейросети: {str(e)}")
+        bot.reply_to(message, f"Ошибка: {str(e)}")
 
 if __name__ == '__main__':
     bot.infinity_polling()
