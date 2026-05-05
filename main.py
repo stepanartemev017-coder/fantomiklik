@@ -9,42 +9,69 @@ AI_KEY = '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'
 bot = telebot.TeleBot(TOKEN)
 client = Groq(api_key=AI_KEY)
 
-# ГЛАВНОЕ МЕНЮ
+# --- РАБОТА С ПАМЯТЬЮ (SQLite) ---
+def init_db():
+    conn = sqlite3.connect('memory.db')
+    cursor = conn.cursor()
+    cursor.execute('CREATE TABLE IF NOT EXISTS history (chat_id INTEGER PRIMARY KEY, messages TEXT)')
+    conn.commit()
+    conn.close()
+
+def get_history(chat_id):
+    conn = sqlite3.connect('memory.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT messages FROM history WHERE chat_id = ?', (chat_id,))
+    result = cursor.fetchone()
+    conn.close()
+    return json.loads(result[0]) if result else []
+
+def save_history(chat_id, messages):
+    if len(messages) > 40: messages = messages[-40:] # Помним последние 40 сообщений
+    conn = sqlite3.connect('memory.db')
+    cursor = conn.cursor()
+    cursor.execute('INSERT OR REPLACE INTO history (chat_id, messages) VALUES (?, ?)', (chat_id, json.dumps(messages)))
+    conn.commit()
+    conn.close()
+
+init_db()
+
+# --- ЛОГИКА БОТА ---
 @bot.message_handler(commands=['start'])
 def start(message):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add(types.KeyboardButton("ИИ"), types.KeyboardButton("Скрипты"))
     bot.send_message(message.chat.id, "Выбирай вкладку, фраер:", reply_markup=markup)
 
-# ВКЛАДКА СКРИПТЫ
 @bot.message_handler(func=lambda message: message.text == "Скрипты")
 def scripts(message):
     bot.reply_to(message, "Тут пока пусто.")
 
-# ПРИВЕТСТВИЕ ПРИ НАЖАТИИ НА ИИ
 @bot.message_handler(func=lambda message: message.text == "ИИ")
 def ai_hi(message):
     bot.reply_to(message, "Здарова фраер, че хотел?")
 
-# ОСНОВНОЙ ЧАТ
 @bot.message_handler(func=lambda message: True)
 def chat(message):
-    # Пропускаем, если нажаты кнопки меню
-    if message.text in ["ИИ", "Скрипты"]:
-        return
+    if message.text in ["ИИ", "Скрипты"]: return
 
-    bot.send_chat_action(message.chat.id, 'typing')
+    chat_id = message.chat.id
+    bot.send_chat_action(chat_id, 'typing')
+    
+    # Загружаем память
+    history = get_history(chat_id)
+    history.append({"role": "user", "content": message.text})
+    
     try:
-        # ЗАПРОС К НЕЙРОНКЕ
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
-            messages=[
-                {"role": "system", "content": "Ты умный и дерзкий помощник. Отвечай на 'ты', с юмором. На русском языке."},
-                {"role": "user", "content": message.text}
-            ]
+            messages=[{"role": "system", "content": "Ты умный и дерзкий помощник. Отвечай на 'ты', с юмором. На русском."}] + history
         )
-        # ИСПРАВЛЕННЫЙ СПОСОБ ПОЛУЧЕНИЯ ОТВЕТА:
-        answer = completion.choices[0].message.content
+        answer = completion.choices.message.content
+        
+        # Сохраняем ответ бота в память
+        history.append({"role": "assistant", "content": answer})
+        save_history(chat_id, history)
+        
         bot.reply_to(message, answer)
     except Exception as e:
         bot.reply_to(message, f"Ошибка нейронки: {str(e)}")
