@@ -3,7 +3,7 @@ import requests
 
 # --- ТВОИ ДАННЫЕ ---
 TOKEN = '8749709641:AAH8AgA6cj6QPbl14jhjnncn9KVFSDuGOlw'
-AI_KEY = 'sk-f84ab856270742b8865066c608453d5e' 
+AI_KEY = 'AIzaSyBfVeE2mbx6-P8ohLvpWM75AIOXA1X01DE' 
 
 bot = telebot.TeleBot(TOKEN)
 
