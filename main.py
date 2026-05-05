@@ -25,6 +25,7 @@ conn = sqlite3.connect('memory.db')
 conn.execute('CREATE TABLE IF NOT EXISTS history (chat_id INTEGER PRIMARY KEY, messages TEXT, state TEXT)')
 conn.close()
 
+# --- ПРОМТЫ ---
 PROMPTS = {
     "1": "Сделай 5 личных рассылок на тему 'Красота в мелочах'. Пиши строго на ТЫ, обращаясь к одному человеку. Ситуации: новые свечи, белье, чулки, какао, фейл.",
     "2": "Сделай 5 личных рассылок 'Помоги выбрать'. Пиши на ТЫ. Темы: цвет лака, кино, музыка, еда, платье.",
@@ -91,11 +92,11 @@ def callback_query(call):
 @bot.message_handler(func=lambda message: True)
 def handle_text(message):
     chat_id = message.chat.id
-    # Получаем и историю, и состояние
+    # Получаем данные из БД
     res = db_op('SELECT messages, state FROM history WHERE chat_id = ?', (chat_id,))
     
-    # ИСПРАВЛЕННАЯ ПРОВЕРКА:
-    if res and str(res[1]).strip() == "ai_chat":
+    # ИСПРАВЛЕННАЯ ПРОВЕРКА СОСТОЯНИЯ
+    if res and res[1] == "ai_chat":
         bot.send_chat_action(chat_id, 'typing')
         history = json.loads(res[0]) if res[0] else []
         history.append({"role": "user", "content": message.text})
@@ -106,14 +107,16 @@ def handle_text(message):
                 messages=[{"role": "system", "content": SYSTEM_PROMPT}] + history,
                 temperature=0.8
             )
+            # ИСПРАВЛЕНО ОБРАЩЕНИЕ К ОТВЕТУ
             answer = completion.choices[0].message.content
+            
             history.append({"role": "assistant", "content": answer})
             db_op('UPDATE history SET messages = ? WHERE chat_id = ?', (json.dumps(history[-15:]), chat_id))
             bot.reply_to(message, answer)
         except Exception as e:
             bot.reply_to(message, f"Ошибка ИИ: {str(e)}")
     else:
-        # Если состояние не ai_chat, возвращаем в меню
+        # Если состояние не ai_chat
         bot.send_message(chat_id, "Сначала нажми кнопку '🤖 ИИ Ассистент'.", reply_markup=main_menu_markup())
 
 if __name__ == '__main__':
