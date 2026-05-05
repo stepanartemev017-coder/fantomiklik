@@ -1,28 +1,22 @@
 import telebot
-import google.generativeai as genai
+from groq import Groq
 
-# ТВОИ ДАННЫЕ
-TOKEN = '8749709641:AAH8AgA6cj6QPbl14jhjnncn9KVFSDuGOlw' # Тот, который сейчас работает
-GOOGLE_AI_KEY = 'AIzaSyBfVeE2mbx6-P8ohLvpWM75AIOXA1X01DE'
+# ДАННЫЕ
+TOKEN = '8749709641:AAH8AgA6cj6QPbl14jhjnncn9KVFSDuGOlw'
+GROQ_KEY = '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'
 
-# Настройка Gemini
-genai.configure(api_key=GOOGLE_AI_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash')
-
+client = Groq(api_key=GROQ_KEY)
 bot = telebot.TeleBot(TOKEN)
-
-@bot.message_handler(commands=['start'])
-def start(message):
-    bot.reply_to(message, "Привет! Теперь я работаю на бесплатной нейронке от Google. Спрашивай!")
 
 @bot.message_handler(func=lambda message: True)
 def chat(message):
-    bot.send_chat_action(message.chat.id, 'typing')
     try:
-        response = model.generate_content(message.text)
-        bot.reply_to(message, response.text)
+        completion = client.chat.completions.create(
+            model="llama3-8b-8192",
+            messages=[{"role": "user", "content": message.text}]
+        )
+        bot.reply_to(message, completion.choices[0].message.content)
     except Exception as e:
-        print(f"Ошибка: {e}")
-        bot.reply_to(message, "Я немного устал, попробуй через минуту.")
+        bot.reply_to(message, f"Ошибка: {str(e)}")
 
 bot.infinity_polling()
