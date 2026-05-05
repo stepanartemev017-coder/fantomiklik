@@ -1,19 +1,32 @@
 import telebot
+import g4f
 from g4f.client import Client
 
-bot = telebot.TeleBot('8749709641:AAEyio0vr4SNNBeGo8uyrdp7lqlG0q56Pfn8')
-client = Client()
+# ВАЖНО: Токен ОБЯЗАТЕЛЬНО должен быть в кавычках
+TOKEN = '8749709641:AAEyio0vr4SNNBeGo8uyrdp7lqlG0q56Pfn8'
+bot = telebot.TeleBot(TOKEN)
+
+@bot.message_handler(commands=['start'])
+def start(message):
+    bot.reply_to(message, "Привет! Я бесплатная нейросеть. Напиши свой вопрос, и я отвечу!")
 
 @bot.message_handler(func=lambda message: True)
 def chat(message):
+    # Показываем статус "печатает"
     bot.send_chat_action(message.chat.id, 'typing')
+    
     try:
+        client = Client()
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": message.text}],
         )
-        bot.reply_to(message, response.choices[0].message.content)
+        answer = response.choices.message.content
+        bot.reply_to(message, answer)
     except Exception as e:
-        bot.reply_to(message, "Ошибка: бесплатный доступ временно недоступен.")
+        print(f"Ошибка: {e}")
+        bot.reply_to(message, "Извини, бесплатный сервер сейчас перегружен. Попробуй еще раз через минуту.")
 
-bot.infinity_polling()
+if __name__ == '__main__':
+    print("Бот успешно запущен!")
+    bot.infinity_polling()
