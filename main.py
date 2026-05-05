@@ -1,13 +1,19 @@
 import telebot
-import os
+from g4f.client import Client
 
-# Берем токен из настроек хостинга или вставляем вручную
-TOKEN = '8749709641:AAEyi0vr4SNNBeGo8uyrdp7lq1GOq56Pfn8'
-bot = telebot.TeleBot(TOKEN)
+bot = telebot.TeleBot("ТВОЙ_ТОКЕН_ТГ")
+client = Client()
 
-@bot.message_handler(commands=['start'])
-def start(message):
-    bot.reply_to(message, "Привет! Я работаю через GitHub на хостинге!")
+@bot.message_handler(func=lambda message: True)
+def chat(message):
+    bot.send_chat_action(message.chat.id, 'typing')
+    try:
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": message.text}],
+        )
+        bot.reply_to(message, response.choices[0].message.content)
+    except Exception as e:
+        bot.reply_to(message, "Ошибка: бесплатный доступ временно недоступен.")
 
-print("Бот запущен...")
 bot.infinity_polling()
