@@ -6,7 +6,7 @@ import time
 
 # --- КОНФИГУРАЦИЯ ---
 TOKEN = "8149709541:AAEz3qG4iLh2SZ99zdVdtKk4hgnQ6lFVfwc"
-AI_KEY = "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"
+AI_KEY = "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"
 
 bot = telebot.TeleBot(TOKEN)
 client = Groq(api_key=AI_KEY)
