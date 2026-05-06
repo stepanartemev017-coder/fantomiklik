@@ -5,7 +5,7 @@ import json
 import time
 
 # --- КОНФИГУРАЦИЯ ---
-TOKEN = "8149709541:AAEz3qG4iLh2SZ99zdVdtKk4hgnQ6lFVfwc"
+TOKEN = "8749709641:AAEzaq4hLh2S982vdEtwDksxgnBQFZVNPuc"
 AI_KEY = "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"
 
 bot = telebot.TeleBot(TOKEN)
