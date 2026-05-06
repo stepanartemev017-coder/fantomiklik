@@ -26,8 +26,11 @@ SYSTEM_PROMPT = """
 * Создавать разные стили писем: от милой подружки до властной госпожи.
 * Использовать разные темы и сценарии для переписки.
 * Редактировать тексты для PPV и кастомных запросов.
+
 ПРАВИЛА:
-1. Общайся с боссом как эксперт. 2. Не используй эмодзи в ответах боссу. 3. Помогай превращать переписку в прибыль.
+1. Общайся с боссом как эксперт. 
+2. Не используй эмодзи в ответах боссу. 
+3. Помогай превращать переписку в прибыль.
 """
 
 # --- 1. БАЗА ЗНАНИЙ (50 ВОПРОСОВ) ---
@@ -122,6 +125,7 @@ ALL_PROMPTS_LIST = [
     "Придумай 5 рассылок от первого лица (Я). Тема: Мне скучно. Варианты: вредное настроение, хочу съесть торт одна."
 ]
 
+# --- ИНТЕРФЕЙС ---
 def main_keyboard():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     markup.add(
@@ -143,21 +147,21 @@ def handle_all(message):
     text = message.text
     if cid not in user_storage: user_storage[cid] = {'history': []}
 
-    # КНОПКИ С КОПИРОВАНИЕМ ТОЛЬКО ТЕКСТА (БЕЗ НОМЕРОВ)
+    # КНОПКИ С КОПИРОВАНИЕМ
     if "Знакомство" in text:
-        res = "<b>База Знакомство (Кликни на текст для копирования):</b>\n\n"
+        res = "<b>База Знакомство:</b>\n\n"
         for i, q in enumerate(KNOWING_LIST, 1):
             res += f"{i}. <code>{q}</code>\n"
         bot.send_message(cid, res, parse_mode="HTML")
         return
     elif "Секстинг" in text:
-        res = "<b>База Секстинг (Кликни на текст для копирования):</b>\n\n"
+        res = "<b>База Секстинг:</b>\n\n"
         for i, q in enumerate(SEXTING_LIST, 1):
             res += f"{i}. <code>{q}</code>\n"
         bot.send_message(cid, res, parse_mode="HTML")
         return
     elif "Промты" in text:
-        res = "<b>База Промты (Кликни на текст для копирования):</b>\n\n"
+        res = "<b>База Промты:</b>\n\n"
         for i, q in enumerate(ALL_PROMPTS_LIST, 1):
             res += f"{i}. <code>{q}</code>\n"
         bot.send_message(cid, res, parse_mode="HTML")
@@ -167,18 +171,29 @@ def handle_all(message):
         bot.send_message(cid, "Память очищена.")
         return
 
-    # РАБОТА С ИИ (АНАЛИЗ И ГЕНЕРАЦИЯ)
+    # ЛОГИКА ИИ С ИСПРАВЛЕННОЙ ОШИБКОЙ API
     bot.send_chat_action(cid, 'typing')
     user_storage[cid]['history'].append({"role": "user", "content": text})
     try:
         msgs = [{"role": "system", "content": SYSTEM_PROMPT}] + user_storage[cid]['history']
-        completion = client.chat.completions.create(model="llama-3.1-8b-instant", messages=msgs, temperature=0.7)
-        answer = completion.choices.message.content
+        
+        # Запрос к API
+        completion = client.chat.completions.create(
+            model="llama-3.1-8b-instant", 
+            messages=msgs, 
+            temperature=0.7
+        )
+        
+        # ИСПРАВЛЕНО: добавлен индекс [0]
+        answer = completion.choices[0].message.content
+        
         user_storage[cid]['history'].append({"role": "assistant", "content": answer})
-        if len(user_storage[cid]['history']) > 10: user_storage[cid]['history'] = user_storage[cid]['history'][-10:]
+        if len(user_storage[cid]['history']) > 10: 
+            user_storage[cid]['history'] = user_storage[cid]['history'][-10:]
+            
         bot.reply_to(message, answer)
     except Exception as e:
-        bot.reply_to(message, f"Ошибка API: {str(e)}")
+        bot.reply_to(message, f"❌ Ошибка API: {str(e)}")
 
 if __name__ == "__main__":
     bot.infinity_polling()
