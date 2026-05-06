@@ -15,7 +15,6 @@ client = Groq(api_key=AI_KEY)
 user_storage = {}
 
 # --- УЛЬТИМАТИВНАЯ ИНСТРУКЦИЯ (НАСТРОЙКИ ИИ) ---
-# Добавлено правило про эмодзи в конце промпта
 SYSTEM_PROMPT = """
 "Ты — Ethera, профессиональная AI-помощница для чаттера на Fansly."
 "Твой пол — женский. Всегда используй женские окончания (я сделала, я помогу, я поняла)." \n\n"
@@ -78,7 +77,7 @@ SEXTING_LIST = [
 
 # --- 3. 10 ПОДРОБНЫХ ПРОМПТОВ ---
 ALL_PROMPTS_LIST = [
-    "*** ПОДРОБНАЯ БАЗА ПРОМПТОВ ***",
+    "*** ПОДРОБНАЯ БАЗА ПРОМПТОВ (Копируй и в чат) ***",
     "1. 🌸 Домашняя эстетика: Придумай 5 готовых сообщений от моего лица (Я). Тема: красота в мелочах. Варианты: я купила свечи, лежу на свежем белье, надела твои любимые чулки, пью кофе, лайк: уронила телефон на лицо. Веди обращение лично к мужчине.",
     "2. 🎮 Игривое настроение: Придумай 5 сообщений от первого лица (Я). Тема: помоги мне определиться. Ситуации: цвет лака, кино на вечер, еда, платье. Веди обращение лично к мужчине, заставь его дать МНЕ совет.",
     "3. 💼 Работа: Сделай 5 рассылок от лица модели (Я). Темы за кадром. Варианты: беспорядок при сборах, устала после съемок, ищу идеи для видео. Обращайся к мужчине лично.",
@@ -121,7 +120,7 @@ def handle_all(message):
     if cid not in user_storage:
         user_storage[cid] = {'history': []}
 
-    # Логика кнопок (исправлено, чтобы нейронка не отвечала на нажатия)
+    # ПРОВЕРКА КНОПОК
     if "Знакомство" in text:
         chosen_text = random.choice(KNOWING_LIST)
         bot.send_message(cid, f"<code>{chosen_text}</code>", parse_mode="HTML")
@@ -142,27 +141,22 @@ def handle_all(message):
         bot.send_message(cid, "***Память очищена.***", parse_mode="Markdown")
         return
 
-    # Логика ИИ
+    # ОТВЕТ НЕЙРОНКИ
     bot.send_chat_action(cid, 'typing')
     user_storage[cid]['history'].append({"role": "user", "content": text})
 
     try:
         messages_for_api = [{"role": "system", "content": SYSTEM_PROMPT}] + user_storage[cid]['history']
-        
         completion = client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=messages_for_api,
             temperature=0.8
         )
-        
         answer = completion.choices[0].message.content
         user_storage[cid]['history'].append({"role": "assistant", "content": answer})
-        
         if len(user_storage[cid]['history']) > 10:
             user_storage[cid]['history'] = user_storage[cid]['history'][-10:]
-            
         bot.reply_to(message, answer)
-        
     except Exception as e:
         bot.reply_to(message, f"❌ Ошибка API: {str(e)}")
 
