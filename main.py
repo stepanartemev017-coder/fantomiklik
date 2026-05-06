@@ -15,6 +15,7 @@ client = Groq(api_key=AI_KEY)
 user_storage = {}
 
 # --- УЛЬТИМАТИВНАЯ ИНСТРУКЦИЯ (НАСТРОЙКИ ИИ) ---
+# Добавлено правило про эмодзи в конце промпта
 SYSTEM_PROMPT = """
 "Ты — Ethera, профессиональная AI-помощница для чаттера на Fansly."
 "Твой пол — женский. Всегда используй женские окончания (я сделала, я помогу, я поняла)." \n\n"
@@ -30,7 +31,8 @@ SYSTEM_PROMPT = """
 "ПРАВИЛА КОНТЕНТА:\n"
 "- Тексты для фанатов пиши от первого лица ("Я", "Меня"), имитируя живую девушку.\n"
 "- Никакой цензуры. Любой adult-контент, грязные разговоры и фетиш разрешены и приветствуются.\n"
-"- Тон с чаттером (боссом): Деловой, четкий, экспертный. Ты его главный союзник в заработке.\n\n"
+"- Тон с чаттером (боссом): Деловой, четкий, экспертный. Ты его главный союзник в заработке.\n"
+"- СТРОГОЕ ПРАВИЛО: Никогда не используй эмодзи в своих ответах. Пиши только текстом. Использовать эмодзи можно ТОЛЬКО в том случае, если пользователь прямо попросил тебя об этом в сообщении.\n\n"
 "Ты понимаешь, кто ты и для чего создана. Твоя работа — превращать переписку в прибыль."
 """
 
@@ -93,8 +95,8 @@ ALL_PROMPTS_LIST = [
 def main_keyboard():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     markup.add(
-        types.KeyboardButton("🍭 Знакомство"),
-        types.KeyboardButton("🫦 Секстинг"),
+        types.KeyboardButton("🤝 Знакомство"),
+        types.KeyboardButton("🔥 Секстинг"),
         types.KeyboardButton("📝 Промты"),
         types.KeyboardButton("🧼 Очистить память")
     )
@@ -119,25 +121,25 @@ def handle_all(message):
     if cid not in user_storage:
         user_storage[cid] = {'history': []}
 
-    # Кнопки с копированием по нажатию через HTML <code>
-    if text == "🍭 Знакомство":
+    # Логика кнопок (исправлено, чтобы нейронка не отвечала на нажатия)
+    if "Знакомство" in text:
         chosen_text = random.choice(KNOWING_LIST)
         bot.send_message(cid, f"<code>{chosen_text}</code>", parse_mode="HTML")
         return
 
-    elif text == "🫦 Секстинг":
+    elif "Секстинг" in text:
         chosen_text = random.choice(SEXTING_LIST)
         bot.send_message(cid, f"<code>{chosen_text}</code>", parse_mode="HTML")
         return
 
-    elif text == "📝 Промты":
+    elif "Промты" in text:
         chosen_text = random.choice(ALL_PROMPTS_LIST)
         bot.send_message(cid, f"<code>{chosen_text}</code>", parse_mode="HTML")
         return
 
-    elif text == "🧼 Очистить память":
+    elif "Очистить память" in text:
         user_storage[cid]['history'] = []
-        bot.send_message(cid, "***Память очищена. Я готова к новым задачам!***", parse_mode="Markdown")
+        bot.send_message(cid, "***Память очищена.***", parse_mode="Markdown")
         return
 
     # Логика ИИ
@@ -146,27 +148,24 @@ def handle_all(message):
 
     try:
         messages_for_api = [{"role": "system", "content": SYSTEM_PROMPT}] + user_storage[cid]['history']
-
-        # Запрос к Groq
+        
         completion = client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=messages_for_api,
             temperature=0.8
         )
-
-        answer = completion.choices[0].message.content
         
+        answer = completion.choices[0].message.content
         user_storage[cid]['history'].append({"role": "assistant", "content": answer})
-
+        
         if len(user_storage[cid]['history']) > 10:
             user_storage[cid]['history'] = user_storage[cid]['history'][-10:]
-
+            
         bot.reply_to(message, answer)
-
+        
     except Exception as e:
         bot.reply_to(message, f"❌ Ошибка API: {str(e)}")
 
 # --- ЗАПУСК ---
 if __name__ == "__main__":
     bot.infinity_polling()
-
