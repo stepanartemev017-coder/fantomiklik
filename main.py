@@ -8,7 +8,7 @@ import random
 # --- КОНФИГУРАЦИЯ ---
 # Твой новый токен и ключ уже вставлены
 TOKEN = "8749709641:AAEzaq4hLh2S982vdEtwDksxgnBQFZVNPuc"
-AI_KEY = "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"
+AI_KEY = "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"
 
 bot = telebot.TeleBot(TOKEN)
 client = Groq(api_key=AI_KEY)
